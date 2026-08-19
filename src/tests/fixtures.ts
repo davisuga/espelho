@@ -63,22 +63,59 @@ export const twinFixture: CustomerTwin = {
 
 export const analysisFixture: CallAnalysis = {
   summary: "A conversa apresentou a solução antes de aprofundar a principal preocupação.",
-  strengths: ["Tom direto e cordial."],
+  observations: [
+    {
+      id: "observation-1",
+      dimension: "value-communication",
+      turnId: "seller-1",
+      behavior: "negative",
+      severity: "medium",
+      sellerQuote: "Nossa plataforma tem automações, dashboard e integrações.",
+      customerQuote: null,
+      explanation: "O vendedor listou recursos sem conectá-los ao problema de adoção.",
+      researchRuleIds: ["customer-oriented-selling"],
+    },
+    {
+      id: "observation-2",
+      dimension: "objection-handling",
+      turnId: "seller-1",
+      behavior: "missed-opportunity",
+      severity: "high",
+      sellerQuote: "Nossa plataforma tem automações, dashboard e integrações.",
+      customerQuote: null,
+      explanation: "A preocupação da cliente não foi investigada antes da apresentação.",
+      researchRuleIds: ["objection-exploration", "follow-up-questions"],
+    },
+  ],
+  strengths: [
+    {
+      id: "strength-1",
+      dimension: "discovery",
+      turnId: "seller-1",
+      sellerQuote: "Nossa plataforma tem automações, dashboard e integrações.",
+      explanation: "A fala foi direta e fácil de compreender.",
+      researchRuleIds: [],
+    },
+  ],
   moments: [
     {
       id: "moment-1",
       turnId: "seller-1",
       sellerQuote: "Nossa plataforma tem automações, dashboard e integrações.",
+      customerQuote: null,
       issue: "Você perdeu Mariana aqui",
       whyItMatters: "A apresentação ignorou o histórico de baixa adoção da equipe.",
+      betterApproach: "Investigar por que os sistemas anteriores foram abandonados.",
+      exampleResponse: "O que fez sua equipe abandonar os outros sistemas?",
       customerEvidence: [
         {
           claimId: "adoption",
           quote: "Já contratei dois sistemas antes e as meninas acabaram voltando pro WhatsApp.",
         },
       ],
-      researchRuleIds: ["adaptive-selling"],
-      suggestedGoal: "Investigar por que os sistemas anteriores foram abandonados.",
+      researchRuleIds: ["adaptive-selling", "objection-exploration"],
+      dimension: "objection-handling",
+      severity: "high",
     },
   ],
 };

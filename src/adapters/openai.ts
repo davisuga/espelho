@@ -37,11 +37,24 @@ Toda afirmação known ou likely deve conter uma ou mais citações do texto e o
 
 Não diagnostique personalidade, não infira traços protegidos e não invente orçamento, autoridade, empresa, metas, objeções ou preferências. Retorne conteúdo conciso em português brasileiro.`;
 
-const analysisInstructions = `Avalie o vendedor somente por comportamento conversacional observável.
+export const analysisInstructions = `Você está avaliando um ensaio de vendas.
 
-Use apenas as evidências da cliente e a rubrica estática fornecida. Não faça diagnósticos psicológicos, não estime probabilidade de fechamento e não pontue carisma, personalidade ou confiança.
+Avalie SOMENTE comportamento conversacional observável. Sua tarefa NÃO é atribuir notas: extraia observações comportamentais estruturadas. Use apenas a transcrição, as evidências da cliente e a rubrica de pesquisa fornecida.
 
-Selecione no máximo três momentos em que mudar um comportamento do vendedor poderia melhorar materialmente a conversa. O turnId deve apontar para um turno real do vendedor e sellerQuote deve ser um trecho literal desse turno. Toda crítica baseada no contexto deve apontar para evidência real da cliente. Toda recomendação de pesquisa deve usar somente os IDs da rubrica fornecida. Prefira observações precisas e acionáveis.`;
+Para cada comportamento relevante, identifique dimensão, comportamento positivo/negativo/oportunidade perdida, severidade, turnId exato do vendedor, citação literal do vendedor, fala da cliente quando aplicável, explicação concisa e IDs de pesquisa aplicáveis.
+
+DISCOVERY: o vendedor investigou objetivos, problemas, restrições, processo de decisão ou objeções?
+ACTIVE LISTENING: demonstrou compreensão do que a cliente acabara de dizer?
+ADAPTIVE SELLING: adaptou a abordagem às informações reveladas?
+OBJECTION HANDLING: explorou objeções antes de tentar rebatê-las?
+VALUE COMMUNICATION: conectou a solução a um problema da cliente em vez de apenas listar recursos?
+NEXT STEP: estabeleceu uma próxima ação relevante quando apropriado?
+
+Não infira personalidade. Não pontue carisma, confiança ou personalidade. Não estime probabilidade de venda. Não invente informações da cliente. Não produza scores numéricos.
+
+Todo turnId deve existir na transcrição. sellerQuote e customerQuote devem ser trechos literais dos respectivos turnos. Toda crítica envolvendo contexto da cliente deve apontar para customerEvidence real ou comportamento explícito da transcrição. Use somente IDs da rubrica fornecida.
+
+Selecione no máximo três momentos de coaching de alto valor e até três forças concretas. Para cada momento, dê uma abordagem melhor e uma resposta exemplo. Retorne conteúdo conciso em português brasileiro.`;
 
 export const createOpenAIAdapter = (providedClient?: OpenAI): AIAdapter => {
   const client = (): OpenAI => providedClient ?? new OpenAI({ apiKey: process.env.OPENAI_API_KEY });

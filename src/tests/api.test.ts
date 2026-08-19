@@ -86,12 +86,31 @@ describe("API handlers", () => {
       jsonRequest("http://local/api/analyze", {
         twin: twinFixture,
         transcript: [
-          { id: "seller-1", speaker: "seller", text: "Pitch", createdAt: 1 },
+          { id: "seller-1", speaker: "seller", text: "Nossa plataforma tem automações, dashboard e integrações.", createdAt: 1 },
         ],
       }),
     );
     expect(response.status).toBe(200);
     expect((await response.json()).moments).toHaveLength(1);
+  });
+
+  it("rejects analysis that references a missing transcript turn", async () => {
+    const handler = createAnalyzeHandler({
+      analyze: vi.fn().mockResolvedValue({
+        ...analysisFixture,
+        strengths: [{ ...analysisFixture.strengths[0], turnId: "missing" }],
+      }),
+    });
+    const response = await handler(
+      jsonRequest("http://local/api/analyze", {
+        twin: twinFixture,
+        transcript: [
+          { id: "seller-1", speaker: "seller", text: "Nossa plataforma tem automações, dashboard e integrações.", createdAt: 1 },
+        ],
+      }),
+    );
+    expect(response.status).toBe(502);
+    expect((await response.json()).error.message).toContain("turno inexistente");
   });
 
   it("returns a customer text turn", async () => {

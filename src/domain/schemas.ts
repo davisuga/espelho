@@ -41,30 +41,76 @@ export const ConversationTurnSchema = z.object({
   createdAt: z.number().finite(),
 });
 
+export const ScoreDimensionSchema = z.enum([
+  "discovery",
+  "active-listening",
+  "adaptive-selling",
+  "objection-handling",
+  "value-communication",
+  "next-step",
+]);
+
 export const ResearchRuleIdSchema = z.enum([
   "adaptive-selling",
   "follow-up-questions",
+  "active-listening",
+  "customer-oriented-selling",
+  "objection-exploration",
 ]);
+
+export const ObservationBehaviorSchema = z.enum([
+  "positive",
+  "negative",
+  "missed-opportunity",
+]);
+
+export const SeveritySchema = z.enum(["low", "medium", "high"]);
+
+export const BehavioralObservationSchema = z.object({
+  id: z.string().trim().min(1),
+  dimension: ScoreDimensionSchema,
+  turnId: z.string().trim().min(1),
+  behavior: ObservationBehaviorSchema,
+  severity: SeveritySchema,
+  sellerQuote: z.string().trim().min(1).nullable(),
+  customerQuote: z.string().trim().min(1).nullable(),
+  explanation: z.string().trim().min(1),
+  researchRuleIds: z.array(ResearchRuleIdSchema),
+});
+
+export const CoachingStrengthSchema = z.object({
+  id: z.string().trim().min(1),
+  dimension: ScoreDimensionSchema,
+  turnId: z.string().trim().min(1),
+  sellerQuote: z.string().trim().min(1),
+  explanation: z.string().trim().min(1),
+  researchRuleIds: z.array(ResearchRuleIdSchema),
+});
+
+export const CustomerEvidenceReferenceSchema = z.object({
+  claimId: z.string().trim().min(1),
+  quote: z.string().trim().min(1),
+});
 
 export const CoachingMomentSchema = z.object({
   id: z.string().trim().min(1),
   turnId: z.string().trim().min(1),
   sellerQuote: z.string().trim().min(1),
+  customerQuote: z.string().trim().min(1).nullable(),
   issue: z.string().trim().min(1),
   whyItMatters: z.string().trim().min(1),
-  customerEvidence: z.array(
-    z.object({
-      claimId: z.string().trim().min(1),
-      quote: z.string().trim().min(1),
-    }),
-  ),
+  betterApproach: z.string().trim().min(1),
+  exampleResponse: z.string().trim().min(1),
+  customerEvidence: z.array(CustomerEvidenceReferenceSchema),
   researchRuleIds: z.array(ResearchRuleIdSchema),
-  suggestedGoal: z.string().trim().min(1),
+  dimension: ScoreDimensionSchema,
+  severity: SeveritySchema,
 });
 
 export const CallAnalysisSchema = z.object({
   summary: z.string().trim().min(1),
-  strengths: z.array(z.string().trim().min(1)),
+  observations: z.array(BehavioralObservationSchema),
+  strengths: z.array(CoachingStrengthSchema).max(3),
   moments: z.array(CoachingMomentSchema).max(3),
 });
 
@@ -79,9 +125,33 @@ export type CustomerFact = Readonly<z.infer<typeof CustomerFactSchema>>;
 export type Unknown = Readonly<z.infer<typeof UnknownSchema>>;
 export type CustomerTwin = Readonly<z.infer<typeof CustomerTwinSchema>>;
 export type ConversationTurn = Readonly<z.infer<typeof ConversationTurnSchema>>;
+export type ScoreDimension = z.infer<typeof ScoreDimensionSchema>;
 export type ResearchRuleId = z.infer<typeof ResearchRuleIdSchema>;
-export type CoachingMoment = Readonly<z.infer<typeof CoachingMomentSchema>>;
-export type CallAnalysis = Readonly<z.infer<typeof CallAnalysisSchema>>;
+export type ObservationBehavior = z.infer<typeof ObservationBehaviorSchema>;
+export type Severity = z.infer<typeof SeveritySchema>;
+export type BehavioralObservation = Readonly<
+  Omit<z.infer<typeof BehavioralObservationSchema>, "researchRuleIds"> & {
+    researchRuleIds: readonly ResearchRuleId[];
+  }
+>;
+export type CoachingStrength = Readonly<
+  Omit<z.infer<typeof CoachingStrengthSchema>, "researchRuleIds"> & {
+    researchRuleIds: readonly ResearchRuleId[];
+  }
+>;
+export type CustomerEvidenceReference = Readonly<z.infer<typeof CustomerEvidenceReferenceSchema>>;
+export type CoachingMoment = Readonly<
+  Omit<z.infer<typeof CoachingMomentSchema>, "customerEvidence" | "researchRuleIds"> & {
+    customerEvidence: readonly CustomerEvidenceReference[];
+    researchRuleIds: readonly ResearchRuleId[];
+  }
+>;
+export type CallAnalysis = Readonly<{
+  summary: string;
+  observations: readonly BehavioralObservation[];
+  strengths: readonly CoachingStrength[];
+  moments: readonly CoachingMoment[];
+}>;
 export type ReplayContext = Readonly<z.infer<typeof ReplayContextSchema>>;
 
 export const TwinRequestSchema = z.object({

@@ -37,6 +37,8 @@ describe("Espelho fallback happy path", () => {
     expect(await screen.findByText(/como isso vai simplificar/i)).toBeVisible();
 
     await user.click(screen.getByRole("button", { name: "Encerrar ensaio" }));
+    expect(await screen.findByText("67")).toBeVisible();
+    expect(screen.getByText("Seu desempenho, dimensão por dimensão")).toBeVisible();
     expect(await screen.findByRole("heading", { name: /momento que vale refazer/i })).toBeVisible();
     expect(screen.getByText("Você perdeu Mariana aqui")).toBeVisible();
 

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildTwinInstructions, formatTwinEvidence } from "@/domain/twin-prompt";
+import { analysisInstructions } from "@/adapters/openai";
 import { twinFixture } from "./fixtures";
 
 describe("twin prompt", () => {
@@ -14,5 +15,11 @@ describe("twin prompt", () => {
     expect(formatTwinEvidence(twinFixture)).toContain(
       "Já contratei dois sistemas antes",
     );
+  });
+
+  it("makes the analysis extract behavior without generating scores", () => {
+    expect(analysisInstructions).toContain("NÃO é atribuir notas");
+    expect(analysisInstructions).toContain("Não produza scores numéricos");
+    expect(analysisInstructions).toContain("Não infira personalidade");
   });
 });
