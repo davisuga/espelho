@@ -1,62 +1,32 @@
-import { analyzeCall } from "@/adapters/openai";
-import {
-  AnalysisRequestSchema,
-  CallAnalysisSchema,
-  type CallAnalysis,
-  type ConversationTurn,
-} from "@/domain/schemas";
-import {
-  MARIANA_TWIN,
-  deterministicAnalysis,
-} from "@/fixtures/mariana";
-import {
-  JORDAN_TWIN,
-  deterministicJordanAnalysis,
-} from "@/fixtures/jordan";
+import type { AIAdapter } from "@/adapters/openai";
+import { openAIAdapter } from "@/adapters/openai";
+import { AnalyzeRequestSchema, CallAnalysisSchema } from "@/domain/schemas";
+import { validateAnalysisReferences } from "@/domain/analysis-validation";
+import { invalidBody, providerFailure, withTimeout } from "../_shared";
 
-const jsonError = (message: string, status: number): Response =>
-  Response.json({ error: message }, { status });
+export const runtime = "nodejs";
 
-const fallbackAnalysis = (
-  customerName: string,
-  transcript: readonly ConversationTurn[],
-): CallAnalysis => {
-  const sellerTurn = transcript.find((turn) => turn.speaker === "seller");
+export const createAnalyzeHandler =
+  (adapter: Pick<AIAdapter, "analyze">) =>
+  async (request: Request): Promise<Response> => {
+    try {
+      const parsed = AnalyzeRequestSchema.safeParse(await request.json());
+      if (!parsed.success) return invalidBody(parsed.error);
+      const analysis = CallAnalysisSchema.parse(
+        await withTimeout(adapter.analyze(parsed.data.twin, parsed.data.transcript)),
+      );
+      const referenceErrors = validateAnalysisReferences(
+        analysis,
+        parsed.data.twin,
+        parsed.data.transcript,
+      );
+      if (referenceErrors.length) {
+        throw new Error(`Análise sem evidência verificável: ${referenceErrors[0]}`);
+      }
+      return Response.json(analysis);
+    } catch (error) {
+      return providerFailure(error);
+    }
+  };
 
-  return sellerTurn
-    ? customerName === JORDAN_TWIN.name
-      ? deterministicJordanAnalysis(sellerTurn.id, sellerTurn.text)
-      : deterministicAnalysis(sellerTurn.id, sellerTurn.text)
-    : {
-        summary: "The conversation does not contain a seller turn to analyze yet.",
-        strengths: [],
-        moments: [],
-      };
-};
-
-export async function POST(request: Request): Promise<Response> {
-  const body = await request.json().catch(() => null);
-  const parsed = AnalysisRequestSchema.safeParse(body);
-
-  if (!parsed.success) {
-    return jsonError("Provide a valid profile and transcript.", 400);
-  }
-
-  if (!process.env.OPENAI_API_KEY?.trim()) {
-    return [MARIANA_TWIN.name, JORDAN_TWIN.name].includes(parsed.data.twin.name)
-      ? Response.json(
-          CallAnalysisSchema.parse(fallbackAnalysis(parsed.data.twin.name, parsed.data.transcript)),
-        )
-      : jsonError("OPENAI_API_KEY is not configured.", 503);
-  }
-
-  try {
-    const analysis = CallAnalysisSchema.parse(
-      await analyzeCall(parsed.data.twin, parsed.data.transcript),
-    );
-    return Response.json(analysis);
-  } catch (error) {
-    console.error("Call analysis failed", error);
-    return jsonError("The conversation could not be analyzed.", 502);
-  }
-}
+export const POST = createAnalyzeHandler(openAIAdapter);

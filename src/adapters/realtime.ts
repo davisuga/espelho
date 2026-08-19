@@ -1,197 +1,188 @@
-import {
-  RealtimeAgent,
-  RealtimeSession,
-  type RealtimeItem,
-} from "@openai/agents/realtime";
-
-import type { LiveModel } from "@/domain/app-state";
 import type { ConversationTurn } from "@/domain/schemas";
 
-export type VoiceState = "listening" | "speaking";
+export type VoiceStatus = "idle" | "listening" | "speaking";
 
-export type RealtimeConnection = Readonly<{
+export type RealtimeSession = Readonly<{
   close: () => void;
-  mute: (muted: boolean) => void;
-  sendMessage: (message: string) => void;
-  updateHistory: (turns: readonly ConversationTurn[]) => void;
 }>;
 
-type ConnectRealtimeOptions = Readonly<{
-  name: string;
+type RealtimeOptions = Readonly<{
   instructions: string;
-  model: LiveModel;
-  initialHistory?: readonly ConversationTurn[];
-  onHistory: (turns: readonly ConversationTurn[]) => void;
-  onVoiceState: (state: VoiceState) => void;
-  onError: (message: string) => void;
+  onTurn: (turn: ConversationTurn) => void;
+  onStatus: (status: VoiceStatus) => void;
+  onFailure: (message: string) => void;
 }>;
 
-const LIVE_MODEL =
-  process.env.NEXT_PUBLIC_OPENAI_LIVE_MODEL?.trim() ||
-  process.env.NEXT_PUBLIC_OPENAI_REALTIME_MODEL?.trim() ||
-  "gpt-realtime-2.1";
+type RealtimeEvent = Readonly<{
+  type?: string;
+  item_id?: string;
+  transcript?: string;
+  part?: Readonly<{ transcript?: string }>;
+  item?: Readonly<{ id?: string; role?: string }>;
+}>;
 
-const textFromItem = (item: RealtimeItem): string => {
-  if (item.type !== "message") return "";
+const turnFromTranscript = (
+  itemId: string,
+  speaker: ConversationTurn["speaker"],
+  text: string,
+): ConversationTurn => ({
+  id: itemId,
+  speaker,
+  text: text.trim(),
+  createdAt: Date.now(),
+});
 
-  return item.content
-    .map((content) => {
-      if (content.type === "input_text" || content.type === "output_text") {
-        return content.text;
-      }
-      if (content.type === "input_audio" || content.type === "output_audio") {
-        return content.transcript ?? "";
-      }
-      return "";
-    })
-    .join(" ")
-    .trim();
-};
+export const connectRealtime = async (
+  options: RealtimeOptions,
+): Promise<RealtimeSession> => {
+  if (!globalThis.RTCPeerConnection || !navigator.mediaDevices?.getUserMedia) {
+    throw new Error("Este navegador não oferece suporte ao ensaio por voz.");
+  }
 
-export const conversationTurnsFromHistory = (
-  history: readonly RealtimeItem[],
-  now = Date.now(),
-): readonly ConversationTurn[] =>
-  history.flatMap((item, index) => {
-    if (item.type !== "message" || item.role === "system") {
-      return [];
+  const peer = new RTCPeerConnection();
+  const audio = document.createElement("audio");
+  const channel = peer.createDataChannel("oai-events");
+  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  const itemOrder: string[] = [];
+  const pending = new Map<string, ConversationTurn>();
+  const emitted = new Set<string>();
+  const closed = { value: false };
+
+  audio.autoplay = true;
+  audio.hidden = true;
+  document.body.append(audio);
+  stream.getAudioTracks().forEach((track) => peer.addTrack(track, stream));
+
+  const close = (): void => {
+    if (closed.value) return;
+    closed.value = true;
+    channel.close();
+    peer.close();
+    stream.getTracks().forEach((track) => track.stop());
+    audio.srcObject = null;
+    audio.remove();
+  };
+
+  const flushTurns = (): void => {
+    const ready = itemOrder.filter((id) => !emitted.has(id));
+    ready.every((id) => {
+      const turn = pending.get(id);
+      if (!turn) return false;
+      emitted.add(id);
+      options.onTurn(turn);
+      return true;
+    });
+  };
+
+  const registerTurn = (turn: ConversationTurn): void => {
+    if (!itemOrder.includes(turn.id)) itemOrder.push(turn.id);
+    pending.set(turn.id, turn);
+    flushTurns();
+  };
+
+  peer.ontrack = (event) => {
+    audio.srcObject = event.streams[0] ?? null;
+    void audio.play().catch(() => undefined);
+  };
+  peer.onconnectionstatechange = () => {
+    if (["failed", "disconnected"].includes(peer.connectionState) && !closed.value) {
+      options.onFailure("A conexão de áudio foi interrompida.");
+      close();
     }
+  };
 
-    const text = textFromItem(item);
-    return text
-      ? [
-          {
-            id: item.itemId,
-            speaker: item.role === "user" ? ("seller" as const) : ("customer" as const),
-            text,
-            createdAt: now + index,
+  channel.onmessage = (message) => {
+    const event = JSON.parse(String(message.data)) as RealtimeEvent;
+    if (
+      ["conversation.item.added", "conversation.item.created"].includes(
+        event.type ?? "",
+      ) &&
+      event.item?.id &&
+      ["user", "assistant"].includes(event.item.role ?? "") &&
+      !itemOrder.includes(event.item.id)
+    ) {
+      itemOrder.push(event.item.id);
+    }
+    if (
+      event.type === "conversation.item.input_audio_transcription.completed" &&
+      event.item_id &&
+      event.transcript?.trim()
+    ) {
+      registerTurn(turnFromTranscript(event.item_id, "seller", event.transcript));
+    }
+    if (
+      [
+        "response.output_audio_transcript.done",
+        "response.output_audio_transcript.completed",
+      ].includes(event.type ?? "") &&
+      event.item_id &&
+      event.transcript?.trim()
+    ) {
+      registerTurn(turnFromTranscript(event.item_id, "customer", event.transcript));
+    }
+    if (
+      event.type === "response.content_part.done" &&
+      event.item_id &&
+      event.part?.transcript?.trim()
+    ) {
+      registerTurn(turnFromTranscript(event.item_id, "customer", event.part.transcript));
+    }
+    if (event.type === "input_audio_buffer.speech_started") options.onStatus("listening");
+    if (
+      ["response.created", "response.output_audio.delta"].includes(event.type ?? "")
+    ) {
+      options.onStatus("speaking");
+    }
+    if (event.type === "response.done") options.onStatus("listening");
+  };
+
+  const channelReady = new Promise<void>((resolve, reject) => {
+    const timer = globalThis.setTimeout(
+      () => reject(new Error("A conexão de áudio demorou demais para abrir.")),
+      12_000,
+    );
+    channel.onopen = () => {
+      globalThis.clearTimeout(timer);
+      channel.send(
+        JSON.stringify({
+          type: "session.update",
+          session: {
+            type: "realtime",
+            instructions: options.instructions,
+            reasoning: { effort: "low" },
+            audio: {
+              input: {
+                transcription: { model: "gpt-live-transcribe", language: "pt" },
+              },
+              output: { voice: "marin" },
+            },
           },
-        ]
-      : [];
-  });
-
-export const realtimeHistoryFromConversationTurns = (
-  turns: readonly ConversationTurn[],
-): RealtimeItem[] =>
-  turns.map((turn, index) => {
-    const base = {
-      itemId: turn.id,
-      previousItemId: index === 0 ? null : turns[index - 1]?.id,
-      type: "message" as const,
-      status: "completed" as const,
+        }),
+      );
+      options.onStatus("listening");
+      resolve();
     };
-
-    return turn.speaker === "seller"
-      ? {
-          ...base,
-          role: "user" as const,
-          content: [{ type: "input_text" as const, text: turn.text }],
-        }
-      : {
-          ...base,
-          role: "assistant" as const,
-          content: [{ type: "output_text" as const, text: turn.text }],
-        };
+    channel.onerror = () => {
+      globalThis.clearTimeout(timer);
+      reject(new Error("O canal de eventos do áudio falhou."));
+    };
   });
 
-const fetchEphemeralSession = async (model: LiveModel): Promise<
-  Readonly<{ apiKey: string; model: string }>
-> => {
-  const response = await fetch("/api/realtime", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ model }),
-  });
-  const payload: unknown = await response.json();
-
-  if (
-    !response.ok ||
-    typeof payload !== "object" ||
-    payload === null ||
-    !("value" in payload) ||
-    typeof payload.value !== "string"
-  ) {
-    const message =
-      typeof payload === "object" &&
-      payload !== null &&
-      "error" in payload &&
-      typeof payload.error === "string"
-        ? payload.error
-        : "The voice session could not be created.";
-    throw new Error(message);
+  try {
+    const offer = await peer.createOffer();
+    await peer.setLocalDescription(offer);
+    const response = await fetch("/api/realtime", {
+      method: "POST",
+      headers: { "Content-Type": "application/sdp" },
+      body: offer.sdp,
+      signal: AbortSignal.timeout(30_000),
+    });
+    if (!response.ok) throw new Error("Não foi possível abrir a sessão de voz.");
+    await peer.setRemoteDescription({ type: "answer", sdp: await response.text() });
+    await channelReady;
+    return { close };
+  } catch (error) {
+    close();
+    throw error;
   }
-
-  return {
-    apiKey: payload.value,
-    model:
-      "model" in payload && typeof payload.model === "string"
-        ? payload.model
-        : LIVE_MODEL,
-  };
-};
-
-export const connectRealtimeTwin = async (
-  options: ConnectRealtimeOptions,
-): Promise<RealtimeConnection> => {
-  const ephemeralSession = await fetchEphemeralSession(options.model);
-  const historyStartedAt = Date.now();
-  const agent = new RealtimeAgent({
-    name: options.name,
-    instructions: options.instructions,
-    voice: "cedar",
-  });
-  const session = new RealtimeSession(agent, {
-    model: ephemeralSession.model,
-    config: {
-      outputModalities: ["audio"],
-      reasoning: { effort: "low" },
-      audio: {
-        input: {
-          transcription: {
-            model: "gpt-4o-mini-transcribe",
-            language: "en",
-          },
-          turnDetection: {
-            type: "semantic_vad",
-            eagerness: "medium",
-            createResponse: true,
-            interruptResponse: true,
-          },
-        },
-        output: { voice: "cedar" },
-      },
-    },
-  });
-
-  session.on("history_updated", (history) => {
-    options.onHistory(
-      conversationTurnsFromHistory(history, historyStartedAt),
-    );
-  });
-  session.on("audio_start", () => options.onVoiceState("speaking"));
-  session.on("audio_stopped", () => options.onVoiceState("listening"));
-  session.on("audio_interrupted", () => options.onVoiceState("listening"));
-  session.on("error", (event) => {
-    const message =
-      event.error instanceof Error
-        ? event.error.message
-        : "The voice session encountered an error.";
-    options.onError(message);
-  });
-
-  await session.connect({ apiKey: ephemeralSession.apiKey });
-  if (options.initialHistory?.length) {
-    session.updateHistory(
-      realtimeHistoryFromConversationTurns(options.initialHistory),
-    );
-  }
-  options.onVoiceState("listening");
-
-  return {
-    close: () => session.close(),
-    mute: (muted) => session.mute(muted),
-    sendMessage: (message) => session.sendMessage(message),
-    updateHistory: (turns) =>
-      session.updateHistory(realtimeHistoryFromConversationTurns(turns)),
-  };
 };

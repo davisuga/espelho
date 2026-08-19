@@ -1,118 +1,129 @@
-import { Agent, run } from "@openai/agents";
-import { z } from "zod";
-
+import OpenAI from "openai";
+import { zodTextFormat } from "openai/helpers/zod";
+import { numberedSource } from "@/domain/evidence";
 import { RESEARCH_RULES } from "@/domain/research";
 import {
   CallAnalysisSchema,
   CustomerTwinSchema,
-  TextTurnRequestSchema,
   type CallAnalysis,
   type ConversationTurn,
   type CustomerTwin,
+  type ReplayContext,
 } from "@/domain/schemas";
-import { formatTranscript } from "@/domain/transcript";
 import { buildTwinInstructions } from "@/domain/twin-prompt";
+import { formatTranscript } from "@/domain/transcript";
 
-const TEXT_MODEL = process.env.OPENAI_TEXT_MODEL?.trim() || "gpt-5.6";
+export type AIAdapter = Readonly<{
+  extractTwin: (sourceText: string) => Promise<CustomerTwin>;
+  analyze: (
+    twin: CustomerTwin,
+    transcript: readonly ConversationTurn[],
+  ) => Promise<CallAnalysis>;
+  textTurn: (
+    twin: CustomerTwin,
+    transcript: readonly ConversationTurn[],
+    sellerMessage: string,
+    replayContext?: ReplayContext,
+  ) => Promise<string>;
+}>;
 
-const LOW_LATENCY_MODEL_SETTINGS = Object.freeze({
-  reasoning: { effort: "low" as const },
-  text: { verbosity: "low" as const },
-});
+const textModel = (): string => process.env.OPENAI_TEXT_MODEL ?? "gpt-5.6";
 
-const TextTurnOutputSchema = z.object({
-  customerMessage: z.string().trim().min(1),
-});
+const customerExtractionInstructions = `Você extrai um perfil de simulação limitado às evidências do histórico de uma cliente.
 
-const numberedLines = (sourceText: string): string =>
-  sourceText
-    .split(/\r?\n/)
-    .map((line, index) => `${index + 1}: ${line}`)
-    .join("\n");
+Derive somente afirmações sustentadas pelo texto. Classifique evidência direta como known. Use likely apenas para inferências razoáveis sustentadas por evidência. Identifique explicitamente informações unknown relevantes.
 
-const extractionInstructions = `Extract an evidence-bounded simulation profile from customer conversation history.
+Toda afirmação known ou likely deve conter uma ou mais citações do texto e o índice exato da linha fornecida. A citação deve ser um trecho literal da linha, sem paráfrase.
 
-Use only claims supported by the supplied text. Classify direct evidence as "known". Use "likely" only for a reasonable inference supported by evidence. List relevant missing information under "unknowns".
+Não diagnostique personalidade, não infira traços protegidos e não invente orçamento, autoridade, empresa, metas, objeções ou preferências. Retorne conteúdo conciso em português brasileiro.`;
 
-Every "known" or "likely" fact, concern, and goal must include a faithful quote and its numbered sourceIndex. sourceIndex starts at 1. Create short, stable fact IDs.
+export const analysisInstructions = `Você está avaliando um ensaio de vendas.
 
-Do not diagnose personality, infer protected traits, or invent budget, authority, company details, goals, objections, or preferences. Return concise natural English.`;
+Avalie SOMENTE comportamento conversacional observável. Sua tarefa NÃO é atribuir notas: extraia observações comportamentais estruturadas. Use apenas a transcrição, as evidências da cliente e a rubrica de pesquisa fornecida.
 
-const analysisInstructions = `Evaluate the seller only on observable conversational behavior.
+Para cada comportamento relevante, identifique dimensão, comportamento positivo/negativo/oportunidade perdida, severidade, turnId exato do vendedor, citação literal do vendedor, fala da cliente quando aplicável, explicação concisa e IDs de pesquisa aplicáveis.
 
-Use the customer evidence and supplied research rubric. Do not make psychological diagnoses, estimate closing probability, or score charisma, personality, or confidence.
+DISCOVERY: o vendedor investigou objetivos, problemas, restrições, processo de decisão ou objeções?
+ACTIVE LISTENING: demonstrou compreensão do que a cliente acabara de dizer?
+ADAPTIVE SELLING: adaptou a abordagem às informações reveladas?
+OBJECTION HANDLING: explorou objeções antes de tentar rebatê-las?
+VALUE COMMUNICATION: conectou a solução a um problema da cliente em vez de apenas listar recursos?
+NEXT STEP: estabeleceu uma próxima ação relevante quando apropriado?
 
-Select at most three real seller turns where changing one behavior could improve the conversation. turnId and sellerQuote must copy a supplied seller turn. Every criticism based on customer context must point to an existing claimId and quote. Every research recommendation must use only a supplied rule ID. Prefer precise, actionable observations. Return concise natural English.`;
+Não infira personalidade. Não pontue carisma, confiança ou personalidade. Não estime probabilidade de venda. Não invente informações da cliente. Não produza scores numéricos.
 
-export const extractCustomerTwin = async (
-  sourceText: string,
-): Promise<CustomerTwin> => {
-  const agent = new Agent({
-    name: "Espelho customer evidence extractor",
-    instructions: extractionInstructions,
-    model: TEXT_MODEL,
-    modelSettings: LOW_LATENCY_MODEL_SETTINGS,
-    outputType: CustomerTwinSchema,
-  });
-  const result = await run(
-    agent,
-    `Extract a profile from this history. The lines are already numbered:\n\n${numberedLines(sourceText)}`,
-  );
+Todo turnId deve existir na transcrição. sellerQuote e customerQuote devem ser trechos literais dos respectivos turnos. Toda crítica envolvendo contexto da cliente deve apontar para customerEvidence real ou comportamento explícito da transcrição. Use somente IDs da rubrica fornecida.
 
-  return CustomerTwinSchema.parse(result.finalOutput);
+Selecione no máximo três momentos de coaching de alto valor e até três forças concretas. Para cada momento, dê uma abordagem melhor e uma resposta exemplo. Retorne conteúdo conciso em português brasileiro.`;
+
+export const createOpenAIAdapter = (providedClient?: OpenAI): AIAdapter => {
+  const client = (): OpenAI => providedClient ?? new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+  return {
+    extractTwin: async (sourceText) => {
+      const response = await client().responses.parse({
+        model: textModel(),
+        reasoning: { effort: "low" },
+        input: [
+          { role: "system", content: customerExtractionInstructions },
+          { role: "user", content: numberedSource(sourceText) },
+        ],
+        text: {
+          format: zodTextFormat(CustomerTwinSchema, "customer_twin"),
+          verbosity: "low",
+        },
+      });
+      return CustomerTwinSchema.parse(response.output_parsed);
+    },
+
+    analyze: async (twin, transcript) => {
+      const response = await client().responses.parse({
+        model: textModel(),
+        reasoning: { effort: "low" },
+        input: [
+          { role: "system", content: analysisInstructions },
+          {
+            role: "user",
+            content: JSON.stringify({
+              customerTwin: twin,
+              transcript,
+              researchRubric: RESEARCH_RULES,
+            }),
+          },
+        ],
+        text: {
+          format: zodTextFormat(CallAnalysisSchema, "call_analysis"),
+          verbosity: "low",
+        },
+      });
+      return CallAnalysisSchema.parse(response.output_parsed);
+    },
+
+    textTurn: async (twin, transcript, sellerMessage, replayContext) => {
+      const response = await client().responses.create({
+        model: textModel(),
+        reasoning: { effort: "low" },
+        instructions: buildTwinInstructions(twin, replayContext),
+        input: [
+          {
+            role: "user",
+            content: [
+              "Conversa até agora:",
+              formatTranscript(transcript),
+              `Nova fala do vendedor: ${sellerMessage}`,
+              "Responda agora somente como a cliente.",
+            ].join("\n"),
+          },
+        ],
+        text: { verbosity: "low" },
+      });
+      const message = response.output_text.trim();
+      if (!message) {
+        throw new Error("O provedor retornou uma resposta vazia.");
+      }
+      return message;
+    },
+  };
 };
 
-export const analyzeCall = async (
-  twin: CustomerTwin,
-  transcript: readonly ConversationTurn[],
-): Promise<CallAnalysis> => {
-  const agent = new Agent({
-    name: "Espelho sales conversation coach",
-    instructions: analysisInstructions,
-    model: TEXT_MODEL,
-    modelSettings: LOW_LATENCY_MODEL_SETTINGS,
-    outputType: CallAnalysisSchema,
-  });
-  const result = await run(
-    agent,
-    [
-      `CUSTOMER EVIDENCE\n${JSON.stringify(twin, null, 2)}`,
-      `RESEARCH RUBRIC\n${JSON.stringify(RESEARCH_RULES, null, 2)}`,
-      `TRANSCRIPT\n${formatTranscript(transcript)}`,
-      `TURN IDS\n${transcript.map((turn) => `${turn.id}: ${turn.speaker}`).join("\n")}`,
-    ].join("\n\n"),
-  );
-
-  return CallAnalysisSchema.parse(result.finalOutput);
-};
-
-export const generateTextTurn = async (
-  input: z.infer<typeof TextTurnRequestSchema>,
-): Promise<z.infer<typeof TextTurnOutputSchema>> => {
-  const validated = TextTurnRequestSchema.parse(input);
-  const instructions = buildTwinInstructions(
-    validated.twin,
-    validated.replayContext ?? undefined,
-  );
-  const transcript = formatTranscript(validated.transcript);
-  const latestTurn = validated.transcript.at(-1);
-  const sellerLineAlreadyPresent =
-    latestTurn?.speaker === "seller" &&
-    latestTurn.text === validated.sellerMessage;
-  const sellerLine = sellerLineAlreadyPresent
-    ? ""
-    : `\nSeller: ${validated.sellerMessage}`;
-  const agent = new Agent({
-    name: "Espelho customer twin",
-    instructions,
-    model: TEXT_MODEL,
-    modelSettings: LOW_LATENCY_MODEL_SETTINGS,
-    outputType: TextTurnOutputSchema,
-  });
-  const result = await run(
-    agent,
-    `Conversation so far:\n${transcript || "(start of conversation)"}${sellerLine}\n\nRespond now as the customer in English.`,
-  );
-
-  return TextTurnOutputSchema.parse(result.finalOutput);
-};
+export const openAIAdapter = createOpenAIAdapter();

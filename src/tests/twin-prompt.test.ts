@@ -1,26 +1,25 @@
 import { describe, expect, it } from "vitest";
+import { buildTwinInstructions, formatTwinEvidence } from "@/domain/twin-prompt";
+import { analysisInstructions } from "@/adapters/openai";
+import { twinFixture } from "./fixtures";
 
-import { buildTwinInstructions, findFactById } from "@/domain/twin-prompt";
-import { MARIANA_TWIN } from "@/fixtures/mariana";
-
-describe("customer twin prompt", () => {
-  it("explicitly blocks fabrication of unknown budget", () => {
-    const prompt = buildTwinInstructions(MARIANA_TWIN);
-
-    expect(prompt).toContain("Nunca invente um orçamento");
+describe("twin prompt", () => {
+  it("forbids fabricating unknown budget and timeline", () => {
+    const prompt = buildTwinInstructions(twinFixture);
+    expect(prompt).toContain("Não fabrique orçamento, prazo de decisão");
     expect(prompt).toContain("Orçamento disponível");
-    expect(prompt).toContain("DESCONHECIDO");
+    expect(prompt).toContain("Prazo de decisão");
   });
 
-  it("includes the adoption evidence", () => {
-    const prompt = buildTwinInstructions(MARIANA_TWIN);
-
-    expect(prompt).toContain("as meninas acabaram voltando pro WhatsApp");
-    expect(prompt).toContain("mensagem 4");
+  it("includes known adoption evidence", () => {
+    expect(formatTwinEvidence(twinFixture)).toContain(
+      "Já contratei dois sistemas antes",
+    );
   });
 
-  it("finds known facts and returns null for missing facts", () => {
-    expect(findFactById(MARIANA_TWIN, "past-systems")?.certainty).toBe("known");
-    expect(findFactById(MARIANA_TWIN, "missing")).toBeNull();
+  it("makes the analysis extract behavior without generating scores", () => {
+    expect(analysisInstructions).toContain("NÃO é atribuir notas");
+    expect(analysisInstructions).toContain("Não produza scores numéricos");
+    expect(analysisInstructions).toContain("Não infira personalidade");
   });
 });
