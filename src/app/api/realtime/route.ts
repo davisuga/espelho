@@ -5,7 +5,12 @@ const REALTIME_MODEL =
   process.env.NEXT_PUBLIC_OPENAI_REALTIME_MODEL?.trim() ||
   "gpt-realtime-2.1";
 
-export async function POST(): Promise<Response> {
+const LIVE_MODELS = ["gpt-realtime-2.1", "gpt-live-1"] as const;
+
+const isLiveModel = (value: unknown): value is (typeof LIVE_MODELS)[number] =>
+  typeof value === "string" && LIVE_MODELS.includes(value as (typeof LIVE_MODELS)[number]);
+
+export async function POST(request: Request): Promise<Response> {
   const apiKey = process.env.OPENAI_API_KEY?.trim();
   if (!apiKey) {
     return Response.json(
@@ -13,6 +18,23 @@ export async function POST(): Promise<Response> {
       { status: 503 },
     );
   }
+
+  let requestedModel: unknown;
+  try {
+    const body: unknown = await request.json();
+    requestedModel =
+      typeof body === "object" && body !== null && "model" in body
+        ? body.model
+        : undefined;
+  } catch {
+    requestedModel = undefined;
+  }
+
+  if (requestedModel !== undefined && !isLiveModel(requestedModel)) {
+    return Response.json({ error: "Unsupported voice model." }, { status: 400 });
+  }
+
+  const model = isLiveModel(requestedModel) ? requestedModel : REALTIME_MODEL;
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 15_000);
@@ -29,7 +51,7 @@ export async function POST(): Promise<Response> {
         body: JSON.stringify({
           session: {
             type: "realtime",
-            model: REALTIME_MODEL,
+            model,
           },
         }),
         signal: controller.signal,
@@ -53,7 +75,7 @@ export async function POST(): Promise<Response> {
         : null;
 
     return value
-      ? Response.json({ value, model: REALTIME_MODEL })
+      ? Response.json({ value, model })
       : Response.json(
           { error: "Invalid response while creating the voice session." },
           { status: 502 },

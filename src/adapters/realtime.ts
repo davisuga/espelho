@@ -4,6 +4,7 @@ import {
   type RealtimeItem,
 } from "@openai/agents/realtime";
 
+import type { LiveModel } from "@/domain/app-state";
 import type { ConversationTurn } from "@/domain/schemas";
 
 export type VoiceState = "listening" | "speaking";
@@ -18,6 +19,7 @@ export type RealtimeConnection = Readonly<{
 type ConnectRealtimeOptions = Readonly<{
   name: string;
   instructions: string;
+  model: LiveModel;
   initialHistory?: readonly ConversationTurn[];
   onHistory: (turns: readonly ConversationTurn[]) => void;
   onVoiceState: (state: VoiceState) => void;
@@ -92,10 +94,14 @@ export const realtimeHistoryFromConversationTurns = (
         };
   });
 
-const fetchEphemeralSession = async (): Promise<
+const fetchEphemeralSession = async (model: LiveModel): Promise<
   Readonly<{ apiKey: string; model: string }>
 > => {
-  const response = await fetch("/api/realtime", { method: "POST" });
+  const response = await fetch("/api/realtime", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ model }),
+  });
   const payload: unknown = await response.json();
 
   if (
@@ -127,7 +133,7 @@ const fetchEphemeralSession = async (): Promise<
 export const connectRealtimeTwin = async (
   options: ConnectRealtimeOptions,
 ): Promise<RealtimeConnection> => {
-  const ephemeralSession = await fetchEphemeralSession();
+  const ephemeralSession = await fetchEphemeralSession(options.model);
   const historyStartedAt = Date.now();
   const agent = new RealtimeAgent({
     name: options.name,

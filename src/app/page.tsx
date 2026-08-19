@@ -18,7 +18,11 @@ import {
   type RealtimeConnection,
   type VoiceState,
 } from "@/adapters/realtime";
-import { INITIAL_APP_STATE, reduceAppState } from "@/domain/app-state";
+import {
+  INITIAL_APP_STATE,
+  reduceAppState,
+  type LiveModel,
+} from "@/domain/app-state";
 import { researchRuleById } from "@/domain/research";
 import type {
   CallAnalysis,
@@ -122,11 +126,15 @@ function SourceScreen({
 
 function TwinScreen({
   twin,
+  liveModel,
   onBack,
+  onLiveModelChange,
   onStart,
 }: Readonly<{
   twin: CustomerTwin;
+  liveModel: LiveModel;
   onBack: () => void;
+  onLiveModelChange: (model: LiveModel) => void;
   onStart: () => void;
 }>) {
   const known = twin.facts.filter((fact) => fact.certainty === "known");
@@ -157,9 +165,36 @@ function TwinScreen({
           <h1 className="mt-1 text-4xl font-semibold tracking-[-.04em]">Meet {twin.name}</h1>
           <p className="mt-1 text-[#76717b]">Everything this twin knows comes from the history you supplied.</p>
         </div>
-        <button className={buttonPrimary} type="button" onClick={onStart}>
-          <Mic size={18} /> Start rehearsal
-        </button>
+        <div className="grid gap-3">
+          <div className="rounded-2xl border border-[#dedbd7] bg-white p-1.5 shadow-sm">
+            <span className="mb-1.5 block px-2 pt-1 font-mono text-[9px] font-bold tracking-[.12em] text-[#8a858e]">
+              VOICE MODEL
+            </span>
+            <div className="grid grid-cols-2 gap-1" role="group" aria-label="Voice model">
+              {([
+                ["gpt-realtime-2.1", "Realtime 2.1"],
+                ["gpt-live-1", "GPT Live 1 · Preview"],
+              ] as const).map(([model, label]) => (
+                <button
+                  className={`rounded-lg px-3 py-2 text-xs font-semibold transition ${
+                    liveModel === model
+                      ? "bg-[#19171f] text-white"
+                      : "text-[#716d77] hover:bg-[#f2f0ec]"
+                  }`}
+                  key={model}
+                  type="button"
+                  aria-pressed={liveModel === model}
+                  onClick={() => onLiveModelChange(model)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <button className={buttonPrimary} type="button" onClick={onStart}>
+            <Mic size={18} /> Start rehearsal
+          </button>
+        </div>
       </header>
 
       <div className="grid items-start gap-4 lg:grid-cols-[1.2fr_1fr_.9fr]">
@@ -216,6 +251,7 @@ function PracticeScreen({
   voiceState,
   attempt,
   mode,
+  liveModel,
   onEnd,
   onSend,
 }: Readonly<{
@@ -224,6 +260,7 @@ function PracticeScreen({
   voiceState: VoiceState;
   attempt: 1 | 2;
   mode: "voice" | "text";
+  liveModel: LiveModel;
   onEnd: () => void;
   onSend: (message: string) => Promise<void>;
 }>) {
@@ -240,7 +277,7 @@ function PracticeScreen({
       <header className="grid h-[70px] grid-cols-2 items-center border-b border-white/10 px-5 font-mono text-[10px] tracking-[.13em] text-[#918b99] md:grid-cols-3 md:px-8">
         <button className="flex w-fit items-center gap-2 text-[#bbb5c2]" type="button" onClick={onEnd}><ArrowLeft size={15} /> END</button>
         <span className="hidden justify-self-center md:block">{attempt === 2 ? "↩ SECOND ATTEMPT" : "LIVE REHEARSAL"}</span>
-        <span className="justify-self-end"><i className="mr-2 inline-block size-2 rounded-full bg-[#66dca0] shadow-[0_0_10px_#66dca0]" />GPT LIVE</span>
+        <span className="justify-self-end"><i className="mr-2 inline-block size-2 rounded-full bg-[#66dca0] shadow-[0_0_10px_#66dca0]" />{liveModel === "gpt-live-1" ? "GPT LIVE 1" : "REALTIME 2.1"}</span>
       </header>
       <section className="flex min-h-[430px] flex-1 flex-col items-center justify-center">
         {attempt === 2 && <span className="mb-7 rounded-full border border-[#8f69ef]/40 bg-[#6d45e8]/15 px-4 py-2 text-xs text-[#bea8fb]">Back at the selected moment</span>}
@@ -313,6 +350,7 @@ export default function Home() {
           const connection = await connectRealtimeTwin({
             name: state.twin?.name ?? "Customer",
             instructions,
+            model: state.liveModel,
             initialHistory: state.replayFrom?.previousTurns,
             onHistory: (transcript) => dispatch({ type: "TRANSCRIPT_SYNCED", transcript }),
             onVoiceState: setVoiceState,
@@ -330,7 +368,7 @@ export default function Home() {
       if (generation === connectionGeneration.current) dispatch({ type: "PRACTICE_FAILED", message });
     };
     void connect();
-  }, [state.phase, state.twin, state.replayFrom, instructions]);
+  }, [state.phase, state.twin, state.replayFrom, state.liveModel, instructions]);
 
   useEffect(() => {
     if (state.phase !== "analyzing" || !state.twin) return;
@@ -370,9 +408,9 @@ export default function Home() {
 
   let screen: React.ReactNode;
   if (state.phase === "source" || state.phase === "extracting") screen = <SourceScreen sourceText={state.sourceText} loading={state.phase === "extracting"} onChange={(value) => dispatch({ type: "SOURCE_CHANGED", value })} onExample={() => dispatch({ type: "SOURCE_CHANGED", value: JORDAN_SOURCE })} onSubmit={() => void createTwin()} />;
-  else if (state.phase === "twin" && state.twin) screen = <TwinScreen twin={state.twin} onBack={() => dispatch({ type: "RESET" })} onStart={() => dispatch({ type: "PRACTICE_STARTED" })} />;
+  else if (state.phase === "twin" && state.twin) screen = <TwinScreen twin={state.twin} liveModel={state.liveModel} onBack={() => dispatch({ type: "RESET" })} onLiveModelChange={(model) => dispatch({ type: "LIVE_MODEL_SELECTED", model })} onStart={() => dispatch({ type: "PRACTICE_STARTED" })} />;
   else if (state.phase === "connecting") screen = <LoadingScreen text={`Connecting with ${state.twin?.name ?? "the customer"}...`} detail="Preparing microphone and GPT Live" />;
-  else if (state.phase === "practice" && state.twin) screen = <PracticeScreen twin={state.twin} transcript={state.transcript} voiceState={voiceState} attempt={state.attempt} mode={state.practiceMode} onEnd={endPractice} onSend={sendText} />;
+  else if (state.phase === "practice" && state.twin) screen = <PracticeScreen twin={state.twin} transcript={state.transcript} voiceState={voiceState} attempt={state.attempt} mode={state.practiceMode} liveModel={state.liveModel} onEnd={endPractice} onSend={sendText} />;
   else if (state.phase === "analyzing") screen = <LoadingScreen text="Analyzing the conversation..." detail="Connecting behavior, context, and evidence" />;
   else if (state.phase === "review" && state.analysis) screen = <ReviewScreen analysis={state.analysis} onReplay={(id) => dispatch({ type: "REPLAY_SELECTED", momentId: id })} onReset={() => dispatch({ type: "RESET" })} />;
   else screen = <main className="grid min-h-screen place-items-center px-5 text-center"><div className="max-w-lg"><span className="mx-auto grid size-12 place-items-center rounded-full bg-[#f2dadd] text-xl font-bold text-[#a43f48]">!</span><h1 className="mt-5 text-3xl font-semibold">We could not continue.</h1><p className="mt-3 text-[#77717c]">{state.error}</p><div className="mt-6 flex flex-col justify-center gap-3 sm:flex-row">{state.twin && <button className={buttonPrimary} type="button" onClick={() => dispatch({ type: "PRACTICE_STARTED" })}>Try again</button>}{state.canUseTextFallback && <button className={buttonSecondary} type="button" onClick={() => dispatch({ type: "TEXT_FALLBACK_STARTED" })}>Continue in text</button>}<button className={buttonSecondary} type="button" onClick={useDemo}>Use demo rehearsal <ArrowRight size={16} /></button></div><button className="mt-5 text-sm text-[#77717c]" type="button" onClick={() => dispatch({ type: "BACK_TO_TWIN" })}>Back</button></div></main>;

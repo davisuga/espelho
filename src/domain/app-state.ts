@@ -16,6 +16,7 @@ export type Phase =
   | "error";
 
 export type PracticeMode = "voice" | "text";
+export type LiveModel = "gpt-realtime-2.1" | "gpt-live-1";
 
 export type AppState = Readonly<{
   phase: Phase;
@@ -28,6 +29,7 @@ export type AppState = Readonly<{
   replayFrom: ReplayContext | null;
   selectedMomentId: string | null;
   practiceMode: PracticeMode;
+  liveModel: LiveModel;
   attempt: 1 | 2;
   error: string | null;
   canUseTextFallback: boolean;
@@ -39,6 +41,7 @@ export type AppEvent =
   | Readonly<{ type: "EXTRACTION_SUCCEEDED"; twin: CustomerTwin }>
   | Readonly<{ type: "EXTRACTION_FAILED"; message: string }>
   | Readonly<{ type: "PRACTICE_STARTED" }>
+  | Readonly<{ type: "LIVE_MODEL_SELECTED"; model: LiveModel }>
   | Readonly<{ type: "PRACTICE_CONNECTED"; mode: PracticeMode }>
   | Readonly<{ type: "PRACTICE_FAILED"; message: string }>
   | Readonly<{ type: "TEXT_FALLBACK_STARTED" }>
@@ -71,6 +74,7 @@ export const INITIAL_APP_STATE: AppState = Object.freeze({
   replayFrom: null,
   selectedMomentId: null,
   practiceMode: "voice",
+  liveModel: "gpt-realtime-2.1",
   attempt: 1,
   error: null,
   canUseTextFallback: false,
@@ -107,6 +111,8 @@ export const reduceAppState = (
         error: null,
         canUseTextFallback: false,
       };
+    case "LIVE_MODEL_SELECTED":
+      return { ...state, liveModel: event.model, error: null };
     case "PRACTICE_CONNECTED":
       return {
         ...state,
