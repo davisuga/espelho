@@ -132,7 +132,7 @@ export const connectRealtimeTwin = async (
   const agent = new RealtimeAgent({
     name: options.name,
     instructions: options.instructions,
-    voice: "marin",
+    voice: "cedar",
   });
   const session = new RealtimeSession(agent, {
     model: ephemeralSession.model,
@@ -152,7 +152,7 @@ export const connectRealtimeTwin = async (
             interruptResponse: true,
           },
         },
-        output: { voice: "marin" },
+        output: { voice: "cedar" },
       },
     },
   });
