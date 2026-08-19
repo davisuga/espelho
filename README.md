@@ -14,7 +14,7 @@ histórico e pode voltar a um momento para tentar outra abordagem.
 - Evidence-backed call analysis
 - Research-backed coaching
 - Rewind-and-retry conversation branching
-- Reliable Mariana demo fixture
+- Reliable fictionalized Jordan Belfort demo fixture
 - Unit tests for the deterministic domain core
 
 ## Architecture

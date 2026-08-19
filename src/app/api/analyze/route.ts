@@ -9,17 +9,24 @@ import {
   MARIANA_TWIN,
   deterministicAnalysis,
 } from "@/fixtures/mariana";
+import {
+  JORDAN_TWIN,
+  deterministicJordanAnalysis,
+} from "@/fixtures/jordan";
 
 const jsonError = (message: string, status: number): Response =>
   Response.json({ error: message }, { status });
 
 const fallbackAnalysis = (
+  customerName: string,
   transcript: readonly ConversationTurn[],
 ): CallAnalysis => {
   const sellerTurn = transcript.find((turn) => turn.speaker === "seller");
 
   return sellerTurn
-    ? deterministicAnalysis(sellerTurn.id, sellerTurn.text)
+    ? customerName === JORDAN_TWIN.name
+      ? deterministicJordanAnalysis(sellerTurn.id, sellerTurn.text)
+      : deterministicAnalysis(sellerTurn.id, sellerTurn.text)
     : {
         summary: "A conversa ainda não tem uma fala do vendedor para analisar.",
         strengths: [],
@@ -36,9 +43,9 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   if (!process.env.OPENAI_API_KEY?.trim()) {
-    return parsed.data.twin.name === MARIANA_TWIN.name
+    return [MARIANA_TWIN.name, JORDAN_TWIN.name].includes(parsed.data.twin.name)
       ? Response.json(
-          CallAnalysisSchema.parse(fallbackAnalysis(parsed.data.transcript)),
+          CallAnalysisSchema.parse(fallbackAnalysis(parsed.data.twin.name, parsed.data.transcript)),
         )
       : jsonError("OPENAI_API_KEY não está configurada.", 503);
   }

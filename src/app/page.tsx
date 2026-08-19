@@ -28,9 +28,9 @@ import type {
 import { lastTurns } from "@/domain/transcript";
 import { buildTwinInstructions } from "@/domain/twin-prompt";
 import {
-  MARIANA_BAD_CALL_TRANSCRIPT,
-  MARIANA_SOURCE,
-} from "@/fixtures/mariana";
+  JORDAN_BAD_CALL_TRANSCRIPT,
+  JORDAN_SOURCE,
+} from "@/fixtures/jordan";
 
 const newId = (): string =>
   typeof crypto !== "undefined" && "randomUUID" in crypto
@@ -356,10 +356,10 @@ export default function Home() {
   };
   const endPractice = () => {
     connectionRef.current?.close(); connectionRef.current = null;
-    if (state.transcript.length === 0) dispatch({ type: "TRANSCRIPT_SYNCED", transcript: MARIANA_BAD_CALL_TRANSCRIPT });
+    if (state.transcript.length === 0) dispatch({ type: "TRANSCRIPT_SYNCED", transcript: JORDAN_BAD_CALL_TRANSCRIPT });
     dispatch({ type: "PRACTICE_ENDED" });
   };
-  const useDemo = () => { dispatch({ type: "TRANSCRIPT_SYNCED", transcript: MARIANA_BAD_CALL_TRANSCRIPT }); dispatch({ type: "PRACTICE_ENDED" }); };
+  const useDemo = () => { dispatch({ type: "TRANSCRIPT_SYNCED", transcript: JORDAN_BAD_CALL_TRANSCRIPT }); dispatch({ type: "PRACTICE_ENDED" }); };
   const sendText = async (message: string) => {
     const seller: ConversationTurn = { id: newId(), speaker: "seller", text: message, createdAt: Date.now() };
     dispatch({ type: "TURN_ADDED", turn: seller });
@@ -369,7 +369,7 @@ export default function Home() {
   };
 
   let screen: React.ReactNode;
-  if (state.phase === "source" || state.phase === "extracting") screen = <SourceScreen sourceText={state.sourceText} loading={state.phase === "extracting"} onChange={(value) => dispatch({ type: "SOURCE_CHANGED", value })} onExample={() => dispatch({ type: "SOURCE_CHANGED", value: MARIANA_SOURCE })} onSubmit={() => void createTwin()} />;
+  if (state.phase === "source" || state.phase === "extracting") screen = <SourceScreen sourceText={state.sourceText} loading={state.phase === "extracting"} onChange={(value) => dispatch({ type: "SOURCE_CHANGED", value })} onExample={() => dispatch({ type: "SOURCE_CHANGED", value: JORDAN_SOURCE })} onSubmit={() => void createTwin()} />;
   else if (state.phase === "twin" && state.twin) screen = <TwinScreen twin={state.twin} onBack={() => dispatch({ type: "RESET" })} onStart={() => dispatch({ type: "PRACTICE_STARTED" })} />;
   else if (state.phase === "connecting") screen = <LoadingScreen text={`Conectando com ${state.twin?.name ?? "o cliente"}...`} detail="Preparando microfone e GPT Live" />;
   else if (state.phase === "practice" && state.twin) screen = <PracticeScreen twin={state.twin} transcript={state.transcript} voiceState={voiceState} attempt={state.attempt} mode={state.practiceMode} onEnd={endPractice} onSend={sendText} />;
