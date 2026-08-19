@@ -1,36 +1,43 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Espelho
 
-## Getting Started
+**Treine com seu cliente antes de falar com ele.**
 
-First, run the development server:
+Espelho transforma um histórico real de conversas em um cliente simulado com
+limites claros de evidência. Você pratica por voz, recebe coaching ligado ao
+histórico e pode voltar a um momento para tentar outra abordagem.
+
+## What we built today
+
+- Evidence-bounded customer twin extraction
+- Epistemic KNOWN / LIKELY / UNKNOWN model
+- GPT Realtime voice rehearsal
+- Evidence-backed call analysis
+- Research-backed coaching
+- Rewind-and-retry conversation branching
+- Reliable Mariana demo fixture
+- Unit tests for the deterministic domain core
+
+## Architecture
+
+Functional core / imperative shell. Pure immutable domain functions live in
+`src/domain`; OpenAI, Realtime, microphone, and browser behavior stay at the
+application boundaries.
+
+## Run
 
 ```bash
+npm install
+cp .env.example .env.local
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Set `OPENAI_API_KEY` in `.env.local`. If the hackathon provides GPT-Live preview
+access, set its model ID once in `NEXT_PUBLIC_OPENAI_LIVE_MODEL`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Test
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+npm test
+npm run lint
+npm run build
+```
