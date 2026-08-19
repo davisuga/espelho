@@ -21,7 +21,7 @@ export const createAnalyzeHandler =
         parsed.data.transcript,
       );
       if (referenceErrors.length) {
-        throw new Error(`Análise sem evidência verificável: ${referenceErrors[0]}`);
+        throw new Error(`Analysis contains an unverifiable reference: ${referenceErrors[0]}`);
       }
       return Response.json(analysis);
     } catch (error) {

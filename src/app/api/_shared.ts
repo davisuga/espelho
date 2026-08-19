@@ -3,7 +3,7 @@ import type { ApiError } from "@/domain/schemas";
 
 export class RequestTimeoutError extends Error {
   constructor() {
-    super("A solicitação excedeu o tempo limite.");
+    super("The request timed out.");
     this.name = "RequestTimeoutError";
   }
 }
@@ -22,15 +22,15 @@ export const apiError = (code: string, message: string, status: number): Respons
 export const invalidBody = (error: z.ZodError): Response =>
   apiError(
     "invalid_request",
-    error.issues.at(0)?.message ?? "Dados da solicitação inválidos.",
+    error.issues.at(0)?.message ?? "Invalid request data.",
     400,
   );
 
 export const providerFailure = (error: unknown): Response =>
   error instanceof RequestTimeoutError
-    ? apiError("provider_timeout", "A OpenAI demorou demais para responder.", 504)
+    ? apiError("provider_timeout", "OpenAI took too long to respond.", 504)
     : apiError(
         "provider_failure",
-        error instanceof Error ? error.message : "Não foi possível concluir a solicitação.",
+        error instanceof Error ? error.message : "The request could not be completed.",
         502,
       );

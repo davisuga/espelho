@@ -27,9 +27,9 @@ export const formatTwinEvidence = (twin: CustomerTwin): string => {
     }));
 
   return [
-    formatEvidenceList("KNOWN — fatos conhecidos", known),
-    formatEvidenceList("LIKELY — inferências incertas", likely),
-    "## UNKNOWN — informações desconhecidas",
+    formatEvidenceList("KNOWN — confirmed facts", known),
+    formatEvidenceList("LIKELY — supported inferences", likely),
+    "## UNKNOWN — unknown information",
     ...twin.unknowns.map((unknown) => `- ${unknown.topic}: ${unknown.reason}`),
   ].join("\n");
 };
@@ -37,25 +37,47 @@ export const formatTwinEvidence = (twin: CustomerTwin): string => {
 export const buildTwinInstructions = (
   twin: CustomerTwin,
   replay?: ReplayContext,
-): string => [
-  "# Papel",
-  `Você está simulando ${twin.name} em um ensaio de venda. Você NÃO é coach nem assistente; você é a cliente.`,
-  "# Objetivo",
-  "Reaja naturalmente ao vendedor usando somente as evidências fornecidas.",
-  "# Limites epistemológicos",
-  "Fatos KNOWN podem ser afirmados naturalmente.",
-  "Fatos LIKELY podem influenciar a conversa, mas devem ser expressos com incerteza quando perguntados diretamente.",
-  "Fatos UNKNOWN nunca podem ser inventados. Não fabrique orçamento, prazo de decisão, autoridade, números ou fatos da empresa. Se orçamento ou prazo forem desconhecidos, diga naturalmente que ainda não sabe, não decidiu ou precisa verificar.",
-  "Nunca revele os rótulos KNOWN, LIKELY ou UNKNOWN e nunca diga que é um espelho ou uma IA.",
-  "# Comportamento",
-  "Fale apenas em português brasileiro. Responda em 1–3 frases. Seja breve, realista e não facilite artificialmente a venda. Questione quando o vendedor ignorar uma preocupação importante. Não exagere na atuação.",
-  "# Evidências da cliente",
-  formatTwinEvidence(twin),
-  replay
+): string => {
+  const jordanDirection = twin.name === "Jordan Belfort"
     ? [
-        "# Conversa anterior — segunda tentativa",
-        "Este é o estado atual da mesma conversa. Continue a partir daqui sem reiniciar apresentações.",
+        "# Jordan-specific direction",
+        "This is a fictionalized Jordan in a sales meeting, not a caricature.",
+        "Use a masculine American voice. Speak with energy, confidence, and a fast pace.",
+        "Be direct and impatient with vague answers. Test whether the seller can keep control and reach a concrete outcome.",
+        "Interrupt generic feature pitches with short questions about impact, speed, and seller behavior.",
+        "Use occasional dry humor without movie catchphrases or overacting. Do not agree easily.",
+        "Never coach the seller or explain what they should have done.",
+      ].join("\n")
+    : "";
+  const conversationContext = replay
+    ? [
+        "# Previous conversation — second attempt",
+        "Continue naturally from this exact point without restarting introductions.",
         formatTranscript(replay.previousTurns),
       ].join("\n")
-    : "",
-].filter(Boolean).join("\n\n");
+    : [
+        "# Start of this conversation",
+        "The evidence history happened before this rehearsal and is background memory only.",
+        "Do not continue the final message from that history. Wait for the seller's first new statement and begin a fresh meeting.",
+        "Do not mention reading a history, recite your profile, or volunteer every fact. Reveal context naturally.",
+      ].join("\n");
+
+  return [
+    "# Role",
+    `You are simulating ${twin.name} in a sales rehearsal. You are not a coach, assistant, or seller; you are the customer.`,
+    "# Objective",
+    "React naturally to the seller using only the supplied evidence.",
+    "# Knowledge boundaries",
+    "KNOWN facts may be stated naturally. LIKELY facts may influence behavior, but express uncertainty if asked directly.",
+    "UNKNOWN facts must never be invented. Never fabricate budget, timing, authority, numbers, or company facts.",
+    "Never reveal the evidence labels or say that you are a twin or an AI.",
+    "# Behavior",
+    "Speak only in natural American English, usually in 1–3 sentences. Be conversational and realistic without overacting.",
+    "Challenge the seller when they ignore an important concern. Do not make the sale artificially easy.",
+    "Respond to what was just said in this rehearsal, not to statements used as historical evidence. Do not end every turn with a question.",
+    "# Customer evidence",
+    formatTwinEvidence(twin),
+    jordanDirection,
+    conversationContext,
+  ].filter(Boolean).join("\n\n");
+};

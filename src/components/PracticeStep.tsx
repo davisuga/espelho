@@ -21,7 +21,7 @@ type Props = Readonly<{
 }>;
 
 const statusCopy = (status: VoiceStatus, name: string): string =>
-  status === "speaking" ? `${name} está falando...` : status === "listening" ? "Ouvindo" : "Conectando";
+  status === "speaking" ? `${name} is speaking...` : status === "listening" ? "Listening" : "Connecting";
 
 export function PracticeStep({
   twin,
@@ -45,40 +45,40 @@ export function PracticeStep({
     <main className="practice-screen">
       <header className="practice-header">
         <button className="practice-back" type="button" onClick={onBack} disabled={isBusy}>
-          <ArrowLeft size={17} /> Encerrar
+          <ArrowLeft size={17} /> End
         </button>
         {isReplay ? (
-          <div className="replay-badge"><RotateCcw size={14} /> Segunda tentativa</div>
-        ) : <span className="practice-label">ENSAIO AO VIVO</span>}
-        <span className="secure-label"><span /> SESSÃO PRIVADA</span>
+          <div className="replay-badge"><RotateCcw size={14} /> Second attempt</div>
+        ) : <span className="practice-label">LIVE REHEARSAL</span>}
+        <span className="secure-label"><span /> PRIVATE SESSION</span>
       </header>
 
       <section className="practice-center">
-        {isReplay && rewindLabel ? <p className="rewind-copy">Voltamos para {rewindLabel}</p> : null}
+        {isReplay && rewindLabel ? <p className="rewind-copy">Back to {rewindLabel}</p> : null}
         <VoiceOrb status={isBusy ? "idle" : status} />
         <div className="customer-identity">
           <h1>{twin.name}</h1>
-          <p>{twin.company ?? twin.role ?? "Cliente"}</p>
+          <p>{twin.company ?? twin.role ?? "Customer"}</p>
         </div>
         <div className={`live-status ${status}`}>
-          <span /> {phase === "analyzing" ? "Analisando a conversa..." : phase === "connecting" ? "Conectando..." : mode === "text" ? "Modo texto" : statusCopy(status, twin.name)}
+          <span /> {phase === "analyzing" ? "Analyzing the conversation..." : phase === "connecting" ? "Connecting..." : mode === "text" ? "Text mode" : statusCopy(status, twin.name)}
         </div>
       </section>
 
-      <section className="live-transcript" aria-label="Transcrição ao vivo">
+      <section className="live-transcript" aria-label="Live transcript">
         {latest.length ? latest.map((turn) => (
           <p key={turn.id} className={turn.speaker}>
-            <strong>{turn.speaker === "seller" ? "Você" : twin.name}</strong>
+            <strong>{turn.speaker === "seller" ? "You" : twin.name}</strong>
             {turn.text}
           </p>
-        )) : <p className="transcript-placeholder">A conversa aparecerá aqui, turno por turno.</p>}
+        )) : <p className="transcript-placeholder">The conversation will appear here, turn by turn.</p>}
       </section>
 
       {voiceError && !mode ? (
         <section className="audio-fallback">
           <MicOff size={22} />
-          <div><strong>Não conseguimos iniciar o áudio.</strong><p>{voiceError}</p></div>
-          <button type="button" onClick={onTextMode}><Keyboard size={17} /> Continuar em modo texto</button>
+          <div><strong>We could not start audio.</strong><p>{voiceError}</p></div>
+          <button type="button" onClick={onTextMode}><Keyboard size={17} /> Continue in text mode</button>
         </section>
       ) : null}
 
@@ -95,15 +95,15 @@ export function PracticeStep({
             form.reset();
           }}
         >
-          <input name="message" aria-label="Sua fala" placeholder={`Fale com ${twin.name}...`} autoComplete="off" disabled={isSendingText} />
-          <button type="submit" aria-label="Enviar fala" disabled={isSendingText}>
+          <input name="message" aria-label="Your line" placeholder={`Talk to ${twin.name}...`} autoComplete="off" disabled={isSendingText} />
+          <button type="submit" aria-label="Send line" disabled={isSendingText}>
             {isSendingText ? <span className="spinner dark" /> : <CornerDownLeft size={19} />}
           </button>
         </form>
       ) : null}
 
       <button className="end-practice" type="button" onClick={onEnd} disabled={isBusy || transcript.length === 0}>
-        <span /> {phase === "analyzing" ? "Analisando..." : "Encerrar ensaio"}
+        <span /> {phase === "analyzing" ? "Analyzing..." : "End rehearsal"}
       </button>
     </main>
   );

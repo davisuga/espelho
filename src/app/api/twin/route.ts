@@ -19,7 +19,7 @@ export const createTwinHandler =
       if (!twinEvidenceIsValid(twin, parsed.data.sourceText)) {
         return apiError(
           "invalid_provider_evidence",
-          "O modelo retornou uma evidência que não corresponde ao histórico.",
+          "The model returned evidence that does not match the supplied history.",
           502,
         );
       }

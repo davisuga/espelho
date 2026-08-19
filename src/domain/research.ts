@@ -17,9 +17,9 @@ export const RESEARCH_RULES: readonly ResearchRule[] = Object.freeze([
     id: "adaptive-selling" as const,
     dimension: "adaptive-selling" as const,
     behavior:
-      "Adapta a conversa às informações e preocupações expressas pelo cliente.",
+      "Adapts the conversation to information and concerns expressed by the customer.",
     coachingPrinciple:
-      "Modifique a abordagem à medida que o cliente revela necessidades, restrições e preocupações.",
+      "Adjust the approach as the customer reveals needs, constraints, and concerns.",
     title:
       "Salesperson Adaptive Selling Behavior and Customer Orientation: A Meta-Analysis",
     authors: "George R. Franke & Jeong-Eun Park",
@@ -31,9 +31,9 @@ export const RESEARCH_RULES: readonly ResearchRule[] = Object.freeze([
     id: "follow-up-questions" as const,
     dimension: "discovery" as const,
     behavior:
-      "Usa perguntas de acompanhamento relevantes para compreender o que o cliente acabou de dizer.",
+      "Uses relevant follow-up questions to understand what the customer just said.",
     coachingPrinciple:
-      "Faça perguntas de acompanhamento relevantes antes de voltar à apresentação.",
+      "Ask relevant follow-up questions before returning to the presentation.",
     title: "It Doesn't Hurt to Ask: Question-Asking Increases Liking",
     authors:
       "Karen Huang, Michael Yeomans, Alison Wood Brooks, Julia Minson & Francesca Gino",
@@ -44,9 +44,9 @@ export const RESEARCH_RULES: readonly ResearchRule[] = Object.freeze([
   Object.freeze({
     id: "active-listening" as const,
     dimension: "active-listening" as const,
-    behavior: "Demonstra entendimento do que o cliente acabou de dizer antes de avançar.",
+    behavior: "Demonstrates understanding of what the customer just said before moving on.",
     coachingPrinciple:
-      "Reformule ou confirme a mensagem do cliente para tornar a escuta observável.",
+      "Restate or confirm the customer's message to make listening observable.",
     title: "Effective Interpersonal Listening and Personal Selling",
     authors: "Stephen B. Castleberry & C. David Shepherd",
     year: 1993,
@@ -56,9 +56,9 @@ export const RESEARCH_RULES: readonly ResearchRule[] = Object.freeze([
   Object.freeze({
     id: "customer-oriented-selling" as const,
     dimension: "value-communication" as const,
-    behavior: "Prioriza compreender e resolver o problema do cliente em vez de maximizar o pitch.",
+    behavior: "Prioritizes understanding and solving the customer problem over maximizing the pitch.",
     coachingPrinciple:
-      "Conecte a solução ao problema expresso pelo cliente e evite listar recursos sem relevância demonstrada.",
+      "Connect the solution to the customer's stated problem and avoid listing irrelevant features.",
     title: "The SOCO Scale: A Measure of the Customer Orientation of Salespeople",
     authors: "Robert Saxe & Barton A. Weitz",
     year: 1982,
@@ -68,9 +68,9 @@ export const RESEARCH_RULES: readonly ResearchRule[] = Object.freeze([
   Object.freeze({
     id: "objection-exploration" as const,
     dimension: "objection-handling" as const,
-    behavior: "Reconhece e investiga a objeção antes de tentar respondê-la.",
+    behavior: "Acknowledges and investigates an objection before trying to answer it.",
     coachingPrinciple:
-      "Busque compreender a indecisão e a preocupação específica antes de oferecer uma resposta.",
+      "Understand the specific concern before offering a response.",
     title: "Effective Selling Approaches to Buyers' Objections",
     authors: "Paul H. Schurr, Lois H. Stone & Lee Ann Beller",
     year: 1985,

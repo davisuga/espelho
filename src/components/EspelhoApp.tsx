@@ -7,7 +7,7 @@ import { buildReplayContext } from "@/domain/replay";
 import { CallAnalysisSchema, CustomerTwinSchema, type CoachingMoment, type ConversationTurn, type ReplayContext } from "@/domain/schemas";
 import { buildTwinInstructions } from "@/domain/twin-prompt";
 import { elapsedLabel } from "@/domain/transcript";
-import { MARIANA_SOURCE } from "@/fixtures/mariana";
+import { JORDAN_SOURCE } from "@/fixtures/jordan";
 import { ErrorState } from "./ErrorState";
 import { PracticeStep } from "./PracticeStep";
 import { ReviewStep } from "./ReviewStep";
@@ -22,7 +22,7 @@ const postJson = async <T,>(path: string, body: unknown): Promise<T> => {
     signal: AbortSignal.timeout(32_000),
   });
   const payload = (await response.json()) as T & { error?: Readonly<{ message?: string }> };
-  if (!response.ok) throw new Error(payload.error?.message ?? "Não foi possível concluir a solicitação.");
+  if (!response.ok) throw new Error(payload.error?.message ?? "The request could not be completed.");
   return payload;
 };
 
@@ -51,7 +51,7 @@ export function EspelhoApp() {
       const twin = CustomerTwinSchema.parse(await postJson("/api/twin", { sourceText }));
       dispatch({ type: "EXTRACTION_SUCCEEDED", twin });
     } catch (error) {
-      dispatch({ type: "FAILED", message: error instanceof Error ? error.message : "Falha ao criar o espelho.", recoverPhase: "source" });
+      dispatch({ type: "FAILED", message: error instanceof Error ? error.message : "The customer twin could not be created.", recoverPhase: "source" });
     }
   };
 
@@ -80,7 +80,7 @@ export function EspelhoApp() {
       realtimeRef.current = await connectWithRetry(1);
       dispatch({ type: "PRACTICE_STARTED", mode: "voice" });
     } catch (error) {
-      dispatch({ type: "VOICE_FAILED", message: error instanceof Error ? error.message : "O áudio não pôde ser iniciado." });
+      dispatch({ type: "VOICE_FAILED", message: error instanceof Error ? error.message : "Audio could not be started." });
     }
   };
 
@@ -104,7 +104,7 @@ export function EspelhoApp() {
       });
       dispatch({ type: "TURN_ADDED", turn: makeTurn("customer", result.customerMessage) });
     } catch (error) {
-      dispatch({ type: "FAILED", message: error instanceof Error ? error.message : "A cliente não respondeu.", recoverPhase: "practice" });
+      dispatch({ type: "FAILED", message: error instanceof Error ? error.message : "The customer did not respond.", recoverPhase: "practice" });
     } finally {
       dispatch({ type: "TEXT_SENDING", value: false });
     }
@@ -123,7 +123,7 @@ export function EspelhoApp() {
       const analysis = CallAnalysisSchema.parse(await postJson("/api/analyze", { twin: snapshot.twin, transcript }));
       dispatch({ type: "ANALYSIS_SUCCEEDED", analysis });
     } catch (error) {
-      dispatch({ type: "FAILED", message: error instanceof Error ? error.message : "Falha ao analisar o ensaio.", recoverPhase: "practice" });
+      dispatch({ type: "FAILED", message: error instanceof Error ? error.message : "The rehearsal could not be analyzed.", recoverPhase: "practice" });
     }
   };
 
@@ -146,7 +146,7 @@ export function EspelhoApp() {
   };
 
   if (state.phase === "error") {
-    return <ErrorState message={state.error ?? "Erro desconhecido."} onRetry={() => {
+    return <ErrorState message={state.error ?? "Unknown error."} onRetry={() => {
       const recover = state.recoverPhase;
       dispatch({ type: "ERROR_DISMISSED" });
       if (recover === "source") void extractTwin();
@@ -155,7 +155,7 @@ export function EspelhoApp() {
   }
 
   if (state.phase === "source" || state.phase === "extracting") {
-    return <SourceStep sourceText={state.sourceText} isLoading={state.phase === "extracting"} onChange={(value) => dispatch({ type: "SOURCE_CHANGED", value })} onSample={() => dispatch({ type: "SOURCE_CHANGED", value: MARIANA_SOURCE })} onSubmit={() => void extractTwin()} />;
+    return <SourceStep sourceText={state.sourceText} isLoading={state.phase === "extracting"} onChange={(value) => dispatch({ type: "SOURCE_CHANGED", value })} onSample={() => dispatch({ type: "SOURCE_CHANGED", value: JORDAN_SOURCE })} onSubmit={() => void extractTwin()} />;
   }
 
   if (state.phase === "twin" && state.twin) {

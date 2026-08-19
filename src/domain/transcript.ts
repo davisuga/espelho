@@ -10,7 +10,7 @@ export const conversationPrefix = (
 
 export const formatTranscript = (turns: readonly ConversationTurn[]): string =>
   turns
-    .map((turn) => `${turn.speaker === "seller" ? "Vendedor" : "Cliente"}: ${turn.text}`)
+    .map((turn) => `${turn.speaker === "seller" ? "Seller" : "Customer"}: ${turn.text}`)
     .join("\n");
 
 export const elapsedLabel = (

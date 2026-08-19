@@ -4,10 +4,10 @@ export function ErrorState({ message, onRetry, onReset }: Readonly<{ message: st
   return (
     <main className="error-shell">
       <div className="error-icon"><TriangleAlert size={26} /></div>
-      <span>ALGO SAIU DO ROTEIRO</span>
-      <h1>Não conseguimos concluir esta etapa.</h1>
+      <span>THAT WENT OFF SCRIPT</span>
+      <h1>We could not complete this step.</h1>
       <p>{message}</p>
-      <div><button className="button primary" type="button" onClick={onRetry}><RotateCcw size={17} /> Tentar novamente</button><button className="button secondary" type="button" onClick={onReset}><ArrowLeft size={17} /> Voltar ao início</button></div>
+      <div><button className="button primary" type="button" onClick={onRetry}><RotateCcw size={17} /> Try again</button><button className="button secondary" type="button" onClick={onReset}><ArrowLeft size={17} /> Back to start</button></div>
     </main>
   );
 }

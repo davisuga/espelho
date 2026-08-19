@@ -8,19 +8,19 @@ export function ScoreHero({ score, scorecard, summary }: Props) {
   return (
     <section className="score-hero" aria-labelledby="score-title">
       <div className="score-hero-copy">
-        <span className="section-kicker">RESULTADO DO TREINO</span>
-        <h1 id="score-title">Como foi sua conversa?</h1>
+        <span className="section-kicker">REHEARSAL RESULT</span>
+        <h1 id="score-title">How did the conversation go?</h1>
         <p>{summary}</p>
         <details className="score-method">
-          <summary><Info size={15} /> Como calculamos isso?</summary>
+          <summary><Info size={15} /> How is this calculated?</summary>
           <div>
             <ol>
-              <li>A IA identifica comportamentos observáveis na conversa.</li>
-              <li>Cada observação é vinculada ao trecho correspondente.</li>
-              <li>Uma função determinística transforma as observações em scores.</li>
-              <li>As recomendações usam uma rubrica científica estática e selecionada.</li>
+              <li>AI identifies observable behavior in the conversation.</li>
+              <li>Each observation is linked to the relevant excerpt.</li>
+              <li>A deterministic function converts observations into scores.</li>
+              <li>Recommendations use a fixed, curated research rubric.</li>
             </ol>
-            <strong>A IA não estima personalidade nem probabilidade de compra.</strong>
+            <strong>AI does not estimate personality or purchase probability.</strong>
           </div>
         </details>
       </div>
@@ -28,10 +28,10 @@ export function ScoreHero({ score, scorecard, summary }: Props) {
         <div className="score-number"><strong>{score}</strong><span>/ 100</span></div>
         <p>{scoreInterpretation(score)}</p>
         <dl>
-          <div><dt>Seu melhor comportamento</dt><dd>{SCORE_LABELS[strongest]} · {scorecard[strongest]}</dd></div>
-          <div><dt>Maior oportunidade</dt><dd>{SCORE_LABELS[opportunity]} · {scorecard[opportunity]}</dd></div>
+          <div><dt>Your strongest behavior</dt><dd>{SCORE_LABELS[strongest]} · {scorecard[strongest]}</dd></div>
+          <div><dt>Biggest opportunity</dt><dd>{SCORE_LABELS[opportunity]} · {scorecard[opportunity]}</dd></div>
         </dl>
-        <small>Desempenho nos comportamentos avaliados neste ensaio. Não prevê se a cliente comprará.</small>
+        <small>Performance on the behaviors evaluated in this rehearsal. It does not predict whether the customer will buy.</small>
       </div>
     </section>
   );

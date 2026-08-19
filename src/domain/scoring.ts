@@ -15,12 +15,12 @@ export const SCORE_DIMENSIONS: readonly ScoreDimension[] = Object.freeze([
 ]);
 
 export const SCORE_LABELS: Readonly<Record<ScoreDimension, string>> = Object.freeze({
-  discovery: "Descoberta",
-  "active-listening": "Escuta ativa",
-  "adaptive-selling": "Adaptação ao cliente",
-  "objection-handling": "Tratamento de objeções",
-  "value-communication": "Clareza da proposta",
-  "next-step": "Próximo passo",
+  discovery: "Discovery",
+  "active-listening": "Active listening",
+  "adaptive-selling": "Adaptive selling",
+  "objection-handling": "Objection handling",
+  "value-communication": "Value communication",
+  "next-step": "Next step",
 });
 
 export const SCORE_WEIGHTS: Readonly<Record<ScoreDimension, number>> = Object.freeze({
@@ -78,11 +78,11 @@ export const calculateOverallScore = (scorecard: Scorecard): number =>
   );
 
 export const scoreInterpretation = (score: number): string => {
-  if (score < 40) return "Precisa de bastante prática";
-  if (score < 60) return "Em desenvolvimento";
-  if (score < 75) return "Bom";
-  if (score < 90) return "Muito bom";
-  return "Excelente";
+  if (score < 40) return "Needs significant practice";
+  if (score < 60) return "Developing";
+  if (score < 75) return "Good";
+  if (score < 90) return "Very good";
+  return "Excellent";
 };
 
 export const scoreExtremes = (

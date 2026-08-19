@@ -29,32 +29,32 @@ export type AIAdapter = Readonly<{
 
 const textModel = (): string => process.env.OPENAI_TEXT_MODEL ?? "gpt-5.6";
 
-const customerExtractionInstructions = `Você extrai um perfil de simulação limitado às evidências do histórico de uma cliente.
+const customerExtractionInstructions = `Extract an evidence-bounded customer simulation profile from the supplied history.
 
-Derive somente afirmações sustentadas pelo texto. Classifique evidência direta como known. Use likely apenas para inferências razoáveis sustentadas por evidência. Identifique explicitamente informações unknown relevantes.
+Derive only claims supported by the text. Classify direct evidence as known. Use likely only for reasonable supported inferences. Explicitly identify relevant unknown information.
 
-Toda afirmação known ou likely deve conter uma ou mais citações do texto e o índice exato da linha fornecida. A citação deve ser um trecho literal da linha, sem paráfrase.
+Every known or likely claim must include literal quotes and the exact supplied line index.
 
-Não diagnostique personalidade, não infira traços protegidos e não invente orçamento, autoridade, empresa, metas, objeções ou preferências. Retorne conteúdo conciso em português brasileiro.`;
+Do not diagnose personality, infer protected traits, or invent budget, authority, company facts, goals, objections, or preferences. Return concise American English.`;
 
-export const analysisInstructions = `Você está avaliando um ensaio de vendas.
+export const analysisInstructions = `Evaluate a sales rehearsal.
 
-Avalie SOMENTE comportamento conversacional observável. Sua tarefa NÃO é atribuir notas: extraia observações comportamentais estruturadas. Use apenas a transcrição, as evidências da cliente e a rubrica de pesquisa fornecida.
+Evaluate only observable conversational behavior. Do not assign scores; extract structured behavioral observations using only the transcript, customer evidence, and supplied research rubric.
 
-Para cada comportamento relevante, identifique dimensão, comportamento positivo/negativo/oportunidade perdida, severidade, turnId exato do vendedor, citação literal do vendedor, fala da cliente quando aplicável, explicação concisa e IDs de pesquisa aplicáveis.
+For each relevant behavior, identify dimension, positive/negative/missed-opportunity behavior, severity, exact seller turnId, literal seller quote, customer quote when applicable, concise explanation, and applicable research IDs.
 
-DISCOVERY: o vendedor investigou objetivos, problemas, restrições, processo de decisão ou objeções?
-ACTIVE LISTENING: demonstrou compreensão do que a cliente acabara de dizer?
-ADAPTIVE SELLING: adaptou a abordagem às informações reveladas?
-OBJECTION HANDLING: explorou objeções antes de tentar rebatê-las?
-VALUE COMMUNICATION: conectou a solução a um problema da cliente em vez de apenas listar recursos?
-NEXT STEP: estabeleceu uma próxima ação relevante quando apropriado?
+DISCOVERY: Did the seller investigate goals, problems, constraints, decision process, or objections?
+ACTIVE LISTENING: Did the seller demonstrate understanding of what the customer just said?
+ADAPTIVE SELLING: Did the seller adapt to revealed information?
+OBJECTION HANDLING: Did the seller explore objections before rebutting them?
+VALUE COMMUNICATION: Did the seller connect the solution to a customer problem instead of listing features?
+NEXT STEP: Did the seller establish a relevant next action when appropriate?
 
-Não infira personalidade. Não pontue carisma, confiança ou personalidade. Não estime probabilidade de venda. Não invente informações da cliente. Não produza scores numéricos.
+Do not infer personality or score charisma, confidence, or personality. Do not estimate purchase probability, invent customer information, or produce numeric scores.
 
-Todo turnId deve existir na transcrição. sellerQuote e customerQuote devem ser trechos literais dos respectivos turnos. Toda crítica envolvendo contexto da cliente deve apontar para customerEvidence real ou comportamento explícito da transcrição. Use somente IDs da rubrica fornecida.
+Every turnId must exist in the transcript. Quotes must be literal excerpts. Criticism involving customer context must cite real customerEvidence or explicit transcript behavior. Use only supplied rubric IDs.
 
-Selecione no máximo três momentos de coaching de alto valor e até três forças concretas. Para cada momento, dê uma abordagem melhor e uma resposta exemplo. Retorne conteúdo conciso em português brasileiro.`;
+Select at most three high-value coaching moments and three concrete strengths. For each moment, provide a better approach and example response. Return concise American English.`;
 
 export const createOpenAIAdapter = (providedClient?: OpenAI): AIAdapter => {
   const client = (): OpenAI => providedClient ?? new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -108,10 +108,10 @@ export const createOpenAIAdapter = (providedClient?: OpenAI): AIAdapter => {
           {
             role: "user",
             content: [
-              "Conversa até agora:",
+              "Conversation so far:",
               formatTranscript(transcript),
-              `Nova fala do vendedor: ${sellerMessage}`,
-              "Responda agora somente como a cliente.",
+              `Seller's new statement: ${sellerMessage}`,
+              "Respond now only as the customer.",
             ].join("\n"),
           },
         ],
@@ -119,7 +119,7 @@ export const createOpenAIAdapter = (providedClient?: OpenAI): AIAdapter => {
       });
       const message = response.output_text.trim();
       if (!message) {
-        throw new Error("O provedor retornou uma resposta vazia.");
+        throw new Error("The provider returned an empty response.");
       }
       return message;
     },

@@ -18,19 +18,19 @@ export function SourceStep({
   return (
     <main className="source-shell">
       <header className="brand-header">
-        <a className="brand" href="#top" aria-label="Espelho — início">
+        <a className="brand" href="#top" aria-label="Espelho — home">
           <span className="brand-mark">E</span>
           Espelho
         </a>
-        <span className="step-indicator">01 / 03 &nbsp; COLAR</span>
+        <span className="step-indicator">01 / 03 &nbsp; PASTE</span>
       </header>
 
       <section className="source-hero" id="top">
-        <div className="eyebrow"><Sparkles size={14} /> ENSAIO COM EVIDÊNCIA</div>
-        <h1>Treine com seu cliente<br />antes de falar com ele.</h1>
+        <div className="eyebrow"><Sparkles size={14} /> EVIDENCE-BASED REHEARSAL</div>
+        <h1>Rehearse with your customer<br />before talking to them.</h1>
         <p>
-          Transforme o histórico real da conversa em um espelho da cliente —
-          limitado ao que ela realmente disse.
+          Turn the real conversation history into a customer twin—bounded by
+          what they actually said.
         </p>
       </section>
 
@@ -38,20 +38,20 @@ export function SourceStep({
         <div className="source-card-heading">
           <div>
             <span className="section-number">01</span>
-            <h2 id="source-title">Cole o histórico da cliente</h2>
+            <h2 id="source-title">Paste the customer history</h2>
           </div>
           <FileText size={22} aria-hidden="true" />
         </div>
         <textarea
           value={sourceText}
           onChange={(event) => onChange(event.target.value)}
-          placeholder="Cole mensagens do WhatsApp, emails, notas do CRM ou transcrições..."
-          aria-label="Histórico da cliente"
+          placeholder="Paste messages, emails, CRM notes, or transcripts..."
+          aria-label="Customer history"
           disabled={isLoading}
         />
         <div className="source-actions">
           <button className="button secondary" type="button" onClick={onSample} disabled={isLoading}>
-            Usar exemplo
+            Use Jordan example
           </button>
           <button
             className="button primary"
@@ -60,12 +60,12 @@ export function SourceStep({
             disabled={isLoading || !sourceText.trim()}
           >
             {isLoading ? <span className="spinner" aria-hidden="true" /> : null}
-            {isLoading ? "Criando espelho..." : "Criar espelho"}
+            {isLoading ? "Creating twin..." : "Create twin"}
             {!isLoading ? <ArrowRight size={18} /> : null}
           </button>
         </div>
       </section>
-      <p className="privacy-note">Nada será enviado à cliente.</p>
+      <p className="privacy-note">Nothing will be sent to the customer.</p>
     </main>
   );
 }

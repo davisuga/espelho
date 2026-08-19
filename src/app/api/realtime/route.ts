@@ -9,10 +9,10 @@ export const createRealtimeHandler =
   async (request: Request): Promise<Response> => {
     const sdp = await request.text();
     if (!sdp.trim()) {
-      return apiError("invalid_sdp", "A oferta SDP está vazia.", 400);
+      return apiError("invalid_sdp", "The SDP offer is empty.", 400);
     }
     if (!process.env.OPENAI_API_KEY) {
-      return apiError("missing_api_key", "OPENAI_API_KEY não está configurada.", 502);
+      return apiError("missing_api_key", "OPENAI_API_KEY is not configured.", 502);
     }
 
     const session = JSON.stringify({
@@ -21,9 +21,9 @@ export const createRealtimeHandler =
       reasoning: { effort: "low" },
       audio: {
         input: {
-          transcription: { model: "gpt-live-transcribe", language: "pt" },
+          transcription: { model: "gpt-live-transcribe", language: "en" },
         },
-        output: { voice: "marin" },
+        output: { voice: "cedar" },
       },
     });
     const form = new FormData();
@@ -42,14 +42,14 @@ export const createRealtimeHandler =
       );
       const body = await response.text();
       if (!response.ok) {
-        return apiError("realtime_failure", "Não foi possível iniciar o áudio.", 502);
+        return apiError("realtime_failure", "Audio could not be started.", 502);
       }
       return new Response(body, {
         status: 201,
         headers: { "Content-Type": "application/sdp" },
       });
     } catch {
-      return apiError("realtime_timeout", "A conexão de áudio expirou.", 504);
+      return apiError("realtime_timeout", "The audio connection timed out.", 504);
     }
   };
 

@@ -5,11 +5,11 @@ export function EvidenceCard({ fact }: Readonly<{ fact: CustomerFact }>) {
   return (
     <article className={`evidence-card ${fact.certainty}`}>
       <span className="evidence-type">
-        {fact.certainty === "known" ? "FATO CONFIRMADO" : "INFERÊNCIA"}
+        {fact.certainty === "known" ? "CONFIRMED FACT" : "INFERENCE"}
       </span>
       <h3>{fact.claim}</h3>
       <blockquote>“{evidence.quote}”</blockquote>
-      <footer>Histórico · mensagem {evidence.sourceIndex}</footer>
+      <footer>History · message {evidence.sourceIndex}</footer>
     </article>
   );
 }

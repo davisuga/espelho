@@ -38,22 +38,22 @@ export const validateAnalysisReferences = (
     const turn = sellerTurns.get(turnId);
     if (!turn) errors.push(`${kind} ${id} aponta para um turno inexistente do vendedor.`);
     if (quote && turn && !containsQuote(turn.text, quote)) {
-      errors.push(`${kind} ${id} contém uma citação que não pertence ao turno indicado.`);
+      errors.push(`${kind} ${id} contains a quote that does not belong to the referenced turn.`);
     }
   };
 
   for (const observation of analysis.observations) {
-    validateSellerReference("Observação", observation.id, observation.turnId, observation.sellerQuote);
+    validateSellerReference("Observation", observation.id, observation.turnId, observation.sellerQuote);
     if (
       observation.customerQuote &&
       !customerTurns.some((turn) => containsQuote(turn.text, observation.customerQuote ?? ""))
     ) {
-      errors.push(`Observação ${observation.id} contém uma fala inexistente da cliente.`);
+      errors.push(`Observation ${observation.id} contains a customer quote that does not exist.`);
     }
   }
 
   for (const strength of analysis.strengths) {
-    validateSellerReference("Força", strength.id, strength.turnId, strength.sellerQuote);
+    validateSellerReference("Strength", strength.id, strength.turnId, strength.sellerQuote);
   }
 
   for (const moment of analysis.moments) {
@@ -62,12 +62,12 @@ export const validateAnalysisReferences = (
       moment.customerQuote &&
       !customerTurns.some((turn) => containsQuote(turn.text, moment.customerQuote ?? ""))
     ) {
-      errors.push(`Momento ${moment.id} contém uma fala inexistente da cliente.`);
+      errors.push(`Moment ${moment.id} contains a customer quote that does not exist.`);
     }
     for (const evidence of moment.customerEvidence) {
       const quote = knownEvidence.get(evidence.claimId);
       if (!quote || !containsQuote(quote, evidence.quote)) {
-        errors.push(`Momento ${moment.id} contém evidência da cliente não verificável.`);
+        errors.push(`Moment ${moment.id} contains unverifiable customer evidence.`);
       }
     }
   }

@@ -36,7 +36,7 @@ export const connectRealtime = async (
   options: RealtimeOptions,
 ): Promise<RealtimeSession> => {
   if (!globalThis.RTCPeerConnection || !navigator.mediaDevices?.getUserMedia) {
-    throw new Error("Este navegador não oferece suporte ao ensaio por voz.");
+    throw new Error("This browser does not support voice rehearsal.");
   }
 
   const peer = new RTCPeerConnection();
@@ -86,7 +86,7 @@ export const connectRealtime = async (
   };
   peer.onconnectionstatechange = () => {
     if (["failed", "disconnected"].includes(peer.connectionState) && !closed.value) {
-      options.onFailure("A conexão de áudio foi interrompida.");
+      options.onFailure("The audio connection was interrupted.");
       close();
     }
   };
@@ -138,7 +138,7 @@ export const connectRealtime = async (
 
   const channelReady = new Promise<void>((resolve, reject) => {
     const timer = globalThis.setTimeout(
-      () => reject(new Error("A conexão de áudio demorou demais para abrir.")),
+      () => reject(new Error("The audio connection took too long to open.")),
       12_000,
     );
     channel.onopen = () => {
@@ -152,9 +152,9 @@ export const connectRealtime = async (
             reasoning: { effort: "low" },
             audio: {
               input: {
-                transcription: { model: "gpt-live-transcribe", language: "pt" },
+                transcription: { model: "gpt-live-transcribe", language: "en" },
               },
-              output: { voice: "marin" },
+              output: { voice: "cedar" },
             },
           },
         }),
@@ -164,7 +164,7 @@ export const connectRealtime = async (
     };
     channel.onerror = () => {
       globalThis.clearTimeout(timer);
-      reject(new Error("O canal de eventos do áudio falhou."));
+      reject(new Error("The audio event channel failed."));
     };
   });
 
@@ -177,7 +177,7 @@ export const connectRealtime = async (
       body: offer.sdp,
       signal: AbortSignal.timeout(30_000),
     });
-    if (!response.ok) throw new Error("Não foi possível abrir a sessão de voz.");
+    if (!response.ok) throw new Error("The voice session could not be opened.");
     await peer.setRemoteDescription({ type: "answer", sdp: await response.text() });
     await channelReady;
     return { close };
