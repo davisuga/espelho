@@ -9,7 +9,7 @@ export async function POST(): Promise<Response> {
   const apiKey = process.env.OPENAI_API_KEY?.trim();
   if (!apiKey) {
     return Response.json(
-      { error: "OPENAI_API_KEY não configurada." },
+      { error: "OPENAI_API_KEY is not configured." },
       { status: 503 },
     );
   }
@@ -39,7 +39,7 @@ export async function POST(): Promise<Response> {
     const payload: unknown = await response.json();
     if (!response.ok) {
       return Response.json(
-        { error: "A sessão de voz não pôde ser criada.", detail: payload },
+        { error: "The voice session could not be created.", detail: payload },
         { status: response.status },
       );
     }
@@ -55,7 +55,7 @@ export async function POST(): Promise<Response> {
     return value
       ? Response.json({ value, model: REALTIME_MODEL })
       : Response.json(
-          { error: "Resposta inválida ao criar sessão de voz." },
+          { error: "Invalid response while creating the voice session." },
           { status: 502 },
         );
   } catch (error) {
@@ -63,8 +63,8 @@ export async function POST(): Promise<Response> {
       {
         error:
           error instanceof Error && error.name === "AbortError"
-            ? "A conexão de voz demorou demais."
-            : "Falha ao conectar ao serviço de voz.",
+            ? "The voice connection timed out."
+            : "Could not connect to the voice service.",
       },
       { status: 502 },
     );

@@ -14,7 +14,7 @@ export const RESEARCH_RULES: readonly ResearchRule[] = Object.freeze([
   Object.freeze({
     id: "adaptive-selling" as const,
     behavior:
-      "Adapta a conversa às informações e preocupações expressas pelo cliente.",
+      "Adapts the conversation to information and concerns expressed by the customer.",
     title:
       "Salesperson Adaptive Selling Behavior and Customer Orientation: A Meta-Analysis",
     authors: "George R. Franke & Jeong-Eun Park",
@@ -25,7 +25,7 @@ export const RESEARCH_RULES: readonly ResearchRule[] = Object.freeze([
   Object.freeze({
     id: "follow-up-questions" as const,
     behavior:
-      "Faz perguntas de acompanhamento relevantes para entender o que o cliente acabou de dizer.",
+      "Uses relevant follow-up questions to understand what the customer just said.",
     title: "It Doesn't Hurt to Ask: Question-Asking Increases Liking",
     authors:
       "Karen Huang, Michael Yeomans, Alison Wood Brooks, Julia Minson & Francesca Gino",

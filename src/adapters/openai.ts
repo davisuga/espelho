@@ -30,19 +30,19 @@ const numberedLines = (sourceText: string): string =>
     .map((line, index) => `${index + 1}: ${line}`)
     .join("\n");
 
-const extractionInstructions = `Você extrai um perfil de simulação limitado às evidências de um histórico de conversa com cliente.
+const extractionInstructions = `Extract an evidence-bounded simulation profile from customer conversation history.
 
-Use somente alegações sustentadas pelo texto fornecido. Classifique evidência direta como "known". Use "likely" somente para uma inferência razoável apoiada por uma ou mais evidências. Liste informações relevantes ausentes em "unknowns".
+Use only claims supported by the supplied text. Classify direct evidence as "known". Use "likely" only for a reasonable inference supported by evidence. List relevant missing information under "unknowns".
 
-Cada fato "known" ou "likely", preocupação e objetivo deve incluir uma citação fiel e o número da linha em sourceIndex. sourceIndex começa em 1. Crie IDs curtos e estáveis para os fatos.
+Every "known" or "likely" fact, concern, and goal must include a faithful quote and its numbered sourceIndex. sourceIndex starts at 1. Create short, stable fact IDs.
 
-Não diagnostique personalidade, não infira características protegidas e não invente orçamento, autoridade, empresa, metas, objeções ou preferências. Retorne texto curto em português brasileiro.`;
+Do not diagnose personality, infer protected traits, or invent budget, authority, company details, goals, objections, or preferences. Return concise natural English.`;
 
-const analysisInstructions = `Avalie o vendedor somente por comportamentos observáveis na conversa.
+const analysisInstructions = `Evaluate the seller only on observable conversational behavior.
 
-Use as evidências do cliente e a rubrica de pesquisa fornecidas. Não faça diagnósticos psicológicos, não estime chance de fechamento e não dê notas para carisma, personalidade ou confiança.
+Use the customer evidence and supplied research rubric. Do not make psychological diagnoses, estimate closing probability, or score charisma, personality, or confidence.
 
-Escolha no máximo três falas reais do vendedor em que mudar um comportamento poderia melhorar a conversa. turnId e sellerQuote devem copiar uma fala do vendedor fornecida. Toda crítica baseada no contexto do cliente deve apontar para um claimId e uma citação existentes. Toda recomendação de pesquisa deve usar apenas os IDs fornecidos. Prefira observações específicas e acionáveis. Retorne texto curto em português brasileiro.`;
+Select at most three real seller turns where changing one behavior could improve the conversation. turnId and sellerQuote must copy a supplied seller turn. Every criticism based on customer context must point to an existing claimId and quote. Every research recommendation must use only a supplied rule ID. Prefer precise, actionable observations. Return concise natural English.`;
 
 export const extractCustomerTwin = async (
   sourceText: string,
@@ -56,7 +56,7 @@ export const extractCustomerTwin = async (
   });
   const result = await run(
     agent,
-    `Extraia o perfil deste histórico. As linhas já estão numeradas:\n\n${numberedLines(sourceText)}`,
+    `Extract a profile from this history. The lines are already numbered:\n\n${numberedLines(sourceText)}`,
   );
 
   return CustomerTwinSchema.parse(result.finalOutput);
@@ -76,9 +76,9 @@ export const analyzeCall = async (
   const result = await run(
     agent,
     [
-      `EVIDÊNCIAS DO CLIENTE\n${JSON.stringify(twin, null, 2)}`,
-      `RUBRICA DE PESQUISA\n${JSON.stringify(RESEARCH_RULES, null, 2)}`,
-      `TRANSCRIÇÃO\n${formatTranscript(transcript)}`,
+      `CUSTOMER EVIDENCE\n${JSON.stringify(twin, null, 2)}`,
+      `RESEARCH RUBRIC\n${JSON.stringify(RESEARCH_RULES, null, 2)}`,
+      `TRANSCRIPT\n${formatTranscript(transcript)}`,
       `TURN IDS\n${transcript.map((turn) => `${turn.id}: ${turn.speaker}`).join("\n")}`,
     ].join("\n\n"),
   );
@@ -101,7 +101,7 @@ export const generateTextTurn = async (
     latestTurn.text === validated.sellerMessage;
   const sellerLine = sellerLineAlreadyPresent
     ? ""
-    : `\nVendedor: ${validated.sellerMessage}`;
+    : `\nSeller: ${validated.sellerMessage}`;
   const agent = new Agent({
     name: "Espelho customer twin",
     instructions,
@@ -111,7 +111,7 @@ export const generateTextTurn = async (
   });
   const result = await run(
     agent,
-    `Conversa até agora:\n${transcript || "(início da conversa)"}${sellerLine}\n\nResponda agora como a cliente.`,
+    `Conversation so far:\n${transcript || "(start of conversation)"}${sellerLine}\n\nRespond now as the customer in English.`,
   );
 
   return TextTurnOutputSchema.parse(result.finalOutput);

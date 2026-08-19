@@ -24,7 +24,7 @@ export const buildReplayContext = (
     previousTurns,
     summary:
       previousTurns.length === 0
-        ? "A conversa será retomada do início."
-        : `Conversa anterior até o ponto de retomada:\n${formatTranscript(previousTurns)}`,
+        ? "The conversation will restart from the beginning."
+        : `Previous conversation up to the retry point:\n${formatTranscript(previousTurns)}`,
   };
 };

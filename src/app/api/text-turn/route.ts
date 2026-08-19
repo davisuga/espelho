@@ -9,29 +9,29 @@ const jsonError = (message: string, status: number): Response =>
 const fallbackCustomerMessage = (sellerMessage: string): string => {
   const normalized = sellerMessage.toLocaleLowerCase("pt-BR");
 
-  if (/orçamento|budget|investimento|valor|preço/.test(normalized)) {
-    return "Ainda não tenho um orçamento definido. Preciso entender se isso realmente simplifica a rotina e conversar com meu sócio.";
+  if (/budget|investment|price|cost/.test(normalized)) {
+    return "I do not have a defined budget yet. I need to understand whether this actually simplifies the workflow and discuss it with my partner.";
   }
 
-  if (/whatsapp|equipe|meninas|adoção|implanta/.test(normalized)) {
-    return "O que eu quero ver é uma rotina simples para as meninas. Como vocês evitam que a implantação vire mais trabalho?";
+  if (/whatsapp|team|adoption|implementation/.test(normalized)) {
+    return "I want to see a simple workflow for the team. How do you prevent implementation from creating more work?";
   }
 
-  return "Entendi, mas meu receio ainda é colocar mais uma ferramenta e a equipe voltar para o WhatsApp. Como isso simplifica a rotina na prática?";
+  return "I understand, but I am still concerned about adding another tool and watching the team return to WhatsApp. How does this simplify the real workflow?";
 };
 
 const fallbackJordanMessage = (sellerMessage: string): string => {
   const normalized = sellerMessage.toLocaleLowerCase("pt-BR");
   if (/dashboard|relatório|integraç/.test(normalized)) {
-    return "Você está me vendendo recursos. Eu quero ver se o vendedor melhora quando o cliente coloca pressão.";
+    return "You're selling me features. I want to see whether the seller improves when the buyer applies pressure.";
   }
   if (/objeção|segunda tentativa|pratic/.test(normalized)) {
-    return "Agora estamos falando. Mostre uma objeção difícil, o momento do erro e como ele reage na segunda tentativa.";
+    return "Now we're talking. Show me a hard objection, the moment of failure, and how they respond on the second attempt.";
   }
-  if (/orçamento|valor|preço/.test(normalized)) {
-    return "Eu não vou discutir um número antes de ver resultado concreto.";
+  if (/budget|price|cost|number/.test(normalized)) {
+    return "I'm not discussing a number before I see a concrete result.";
   }
-  return "Se isso deixa minha equipe mais lenta, não serve. Qual mudança de comportamento eu consigo ver na prática?";
+  return "If this makes my team slower, it is useless. What behavior change can I see in practice?";
 };
 
 export async function POST(request: Request): Promise<Response> {
@@ -39,7 +39,7 @@ export async function POST(request: Request): Promise<Response> {
   const parsed = TextTurnRequestSchema.safeParse(body);
 
   if (!parsed.success) {
-    return jsonError("Envie uma mensagem e um contexto válidos.", 400);
+    return jsonError("Provide a valid message and customer context.", 400);
   }
 
   if (!process.env.OPENAI_API_KEY?.trim()) {
@@ -50,13 +50,13 @@ export async function POST(request: Request): Promise<Response> {
               ? fallbackJordanMessage(parsed.data.sellerMessage)
               : fallbackCustomerMessage(parsed.data.sellerMessage),
         })
-      : jsonError("OPENAI_API_KEY não está configurada.", 503);
+      : jsonError("OPENAI_API_KEY is not configured.", 503);
   }
 
   try {
     return Response.json(await generateTextTurn(parsed.data));
   } catch (error) {
     console.error("Text rehearsal turn failed", error);
-    return jsonError("Não foi possível responder como a cliente.", 502);
+    return jsonError("The customer response could not be generated.", 502);
   }
 }

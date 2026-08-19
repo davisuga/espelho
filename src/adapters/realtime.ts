@@ -111,7 +111,7 @@ const fetchEphemeralSession = async (): Promise<
       "error" in payload &&
       typeof payload.error === "string"
         ? payload.error
-        : "Não foi possível criar a sessão de voz.";
+        : "The voice session could not be created.";
     throw new Error(message);
   }
 
@@ -143,7 +143,7 @@ export const connectRealtimeTwin = async (
         input: {
           transcription: {
             model: "gpt-4o-mini-transcribe",
-            language: "pt",
+            language: "en",
           },
           turnDetection: {
             type: "semantic_vad",
@@ -169,7 +169,7 @@ export const connectRealtimeTwin = async (
     const message =
       event.error instanceof Error
         ? event.error.message
-        : "A sessão de voz encontrou um erro.";
+        : "The voice session encountered an error.";
     options.onError(message);
   });
 

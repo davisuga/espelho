@@ -13,14 +13,14 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Espelho — Treine com seu cliente",
-  description: "Crie um espelho do cliente com evidências, pratique ao vivo e refaça os momentos que importam.",
+  title: "Espelho — Rehearse with your customer",
+  description: "Create an evidence-bounded customer twin, rehearse live, and retry the moments that matter.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
-      lang="pt-BR"
+      lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">{children}</body>

@@ -28,7 +28,7 @@ const fallbackAnalysis = (
       ? deterministicJordanAnalysis(sellerTurn.id, sellerTurn.text)
       : deterministicAnalysis(sellerTurn.id, sellerTurn.text)
     : {
-        summary: "A conversa ainda não tem uma fala do vendedor para analisar.",
+        summary: "The conversation does not contain a seller turn to analyze yet.",
         strengths: [],
         moments: [],
       };
@@ -39,7 +39,7 @@ export async function POST(request: Request): Promise<Response> {
   const parsed = AnalysisRequestSchema.safeParse(body);
 
   if (!parsed.success) {
-    return jsonError("Envie um perfil e uma transcrição válidos.", 400);
+    return jsonError("Provide a valid profile and transcript.", 400);
   }
 
   if (!process.env.OPENAI_API_KEY?.trim()) {
@@ -47,7 +47,7 @@ export async function POST(request: Request): Promise<Response> {
       ? Response.json(
           CallAnalysisSchema.parse(fallbackAnalysis(parsed.data.twin.name, parsed.data.transcript)),
         )
-      : jsonError("OPENAI_API_KEY não está configurada.", 503);
+      : jsonError("OPENAI_API_KEY is not configured.", 503);
   }
 
   try {
@@ -57,6 +57,6 @@ export async function POST(request: Request): Promise<Response> {
     return Response.json(analysis);
   } catch (error) {
     console.error("Call analysis failed", error);
-    return jsonError("Não foi possível analisar a conversa.", 502);
+    return jsonError("The conversation could not be analyzed.", 502);
   }
 }
