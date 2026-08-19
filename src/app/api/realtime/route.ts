@@ -1,74 +1,56 @@
-const REALTIME_MODEL =
-  process.env.OPENAI_LIVE_MODEL?.trim() ||
-  process.env.OPENAI_REALTIME_MODEL?.trim() ||
-  process.env.NEXT_PUBLIC_OPENAI_LIVE_MODEL?.trim() ||
-  process.env.NEXT_PUBLIC_OPENAI_REALTIME_MODEL?.trim() ||
-  "gpt-realtime-2.1";
+import { apiError } from "../_shared";
 
-export async function POST(): Promise<Response> {
-  const apiKey = process.env.OPENAI_API_KEY?.trim();
-  if (!apiKey) {
-    return Response.json(
-      { error: "OPENAI_API_KEY is not configured." },
-      { status: 503 },
-    );
-  }
+export const runtime = "nodejs";
 
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 15_000);
+type FetchLike = typeof fetch;
 
-  try {
-    const response = await fetch(
-      "https://api.openai.com/v1/realtime/client_secrets",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          session: {
-            type: "realtime",
-            model: REALTIME_MODEL,
-          },
-        }),
-        signal: controller.signal,
-      },
-    );
-
-    const payload: unknown = await response.json();
-    if (!response.ok) {
-      return Response.json(
-        { error: "The voice session could not be created.", detail: payload },
-        { status: response.status },
-      );
+export const createRealtimeHandler =
+  (fetchImplementation: FetchLike = fetch) =>
+  async (request: Request): Promise<Response> => {
+    const sdp = await request.text();
+    if (!sdp.trim()) {
+      return apiError("invalid_sdp", "A oferta SDP está vazia.", 400);
+    }
+    if (!process.env.OPENAI_API_KEY) {
+      return apiError("missing_api_key", "OPENAI_API_KEY não está configurada.", 502);
     }
 
-    const value =
-      typeof payload === "object" &&
-      payload !== null &&
-      "value" in payload &&
-      typeof payload.value === "string"
-        ? payload.value
-        : null;
-
-    return value
-      ? Response.json({ value, model: REALTIME_MODEL })
-      : Response.json(
-          { error: "Invalid response while creating the voice session." },
-          { status: 502 },
-        );
-  } catch (error) {
-    return Response.json(
-      {
-        error:
-          error instanceof Error && error.name === "AbortError"
-            ? "The voice connection timed out."
-            : "Could not connect to the voice service.",
+    const session = JSON.stringify({
+      type: "realtime",
+      model: process.env.OPENAI_REALTIME_MODEL ?? "gpt-realtime-2.1",
+      reasoning: { effort: "low" },
+      audio: {
+        input: {
+          transcription: { model: "gpt-live-transcribe", language: "pt" },
+        },
+        output: { voice: "marin" },
       },
-      { status: 502 },
-    );
-  } finally {
-    clearTimeout(timeout);
-  }
-}
+    });
+    const form = new FormData();
+    form.set("sdp", sdp);
+    form.set("session", session);
+
+    try {
+      const response = await fetchImplementation(
+        "https://api.openai.com/v1/realtime/calls",
+        {
+          method: "POST",
+          headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}` },
+          body: form,
+          signal: AbortSignal.timeout(30_000),
+        },
+      );
+      const body = await response.text();
+      if (!response.ok) {
+        return apiError("realtime_failure", "Não foi possível iniciar o áudio.", 502);
+      }
+      return new Response(body, {
+        status: 201,
+        headers: { "Content-Type": "application/sdp" },
+      });
+    } catch {
+      return apiError("realtime_timeout", "A conexão de áudio expirou.", 504);
+    }
+  };
+
+export const POST = createRealtimeHandler();

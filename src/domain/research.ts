@@ -14,7 +14,7 @@ export const RESEARCH_RULES: readonly ResearchRule[] = Object.freeze([
   Object.freeze({
     id: "adaptive-selling" as const,
     behavior:
-      "Adapts the conversation to information and concerns expressed by the customer.",
+      "Adapta a conversa às informações e preocupações expressas pelo cliente.",
     title:
       "Salesperson Adaptive Selling Behavior and Customer Orientation: A Meta-Analysis",
     authors: "George R. Franke & Jeong-Eun Park",
@@ -25,7 +25,7 @@ export const RESEARCH_RULES: readonly ResearchRule[] = Object.freeze([
   Object.freeze({
     id: "follow-up-questions" as const,
     behavior:
-      "Uses relevant follow-up questions to understand what the customer just said.",
+      "Usa perguntas de acompanhamento relevantes para compreender o que o cliente acabou de dizer.",
     title: "It Doesn't Hurt to Ask: Question-Asking Increases Liking",
     authors:
       "Karen Huang, Michael Yeomans, Alison Wood Brooks, Julia Minson & Francesca Gino",
@@ -35,7 +35,5 @@ export const RESEARCH_RULES: readonly ResearchRule[] = Object.freeze([
   }),
 ]);
 
-export const researchRuleById = (
-  id: ResearchRuleId | string,
-): ResearchRule | null =>
+export const researchRuleById = (id: ResearchRuleId | string): ResearchRule | null =>
   RESEARCH_RULES.find((rule) => rule.id === id) ?? null;

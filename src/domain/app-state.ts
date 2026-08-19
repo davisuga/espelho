@@ -1,8 +1,9 @@
-import { buildReplayContext, type ReplayContext } from "./replay";
 import type {
   CallAnalysis,
+  CoachingMoment,
   ConversationTurn,
   CustomerTwin,
+  ReplayContext,
 } from "./schemas";
 
 export type Phase =
@@ -14,179 +15,131 @@ export type Phase =
   | "analyzing"
   | "review"
   | "error";
-
 export type PracticeMode = "voice" | "text";
+export type Attempt = "original" | "replay";
 
 export type AppState = Readonly<{
   phase: Phase;
   sourceText: string;
-  sourceLines: readonly string[];
   twin: CustomerTwin | null;
-  transcript: readonly ConversationTurn[];
   originalTranscript: readonly ConversationTurn[];
+  replayTranscript: readonly ConversationTurn[];
   analysis: CallAnalysis | null;
-  replayFrom: ReplayContext | null;
-  selectedMomentId: string | null;
-  practiceMode: PracticeMode;
-  attempt: 1 | 2;
+  replayContext: ReplayContext | null;
+  selectedMoment: CoachingMoment | null;
+  attempt: Attempt;
+  mode: PracticeMode | null;
+  voiceError: string | null;
   error: string | null;
-  canUseTextFallback: boolean;
+  recoverPhase: Exclude<Phase, "error">;
+  isSendingText: boolean;
+  voiceStatus: "idle" | "listening" | "speaking";
 }>;
+
+export const initialAppState: AppState = {
+  phase: "source",
+  sourceText: "",
+  twin: null,
+  originalTranscript: [],
+  replayTranscript: [],
+  analysis: null,
+  replayContext: null,
+  selectedMoment: null,
+  attempt: "original",
+  mode: null,
+  voiceError: null,
+  error: null,
+  recoverPhase: "source",
+  isSendingText: false,
+  voiceStatus: "idle",
+};
 
 export type AppEvent =
   | Readonly<{ type: "SOURCE_CHANGED"; value: string }>
   | Readonly<{ type: "EXTRACTION_STARTED" }>
   | Readonly<{ type: "EXTRACTION_SUCCEEDED"; twin: CustomerTwin }>
-  | Readonly<{ type: "EXTRACTION_FAILED"; message: string }>
-  | Readonly<{ type: "PRACTICE_STARTED" }>
-  | Readonly<{ type: "PRACTICE_CONNECTED"; mode: PracticeMode }>
-  | Readonly<{ type: "PRACTICE_FAILED"; message: string }>
-  | Readonly<{ type: "TEXT_FALLBACK_STARTED" }>
-  | Readonly<{ type: "TURN_ADDED"; turn: ConversationTurn }>
+  | Readonly<{ type: "FAILED"; message: string; recoverPhase: Exclude<Phase, "error"> }>
+  | Readonly<{ type: "PRACTICE_CONNECTING"; attempt: Attempt }>
+  | Readonly<{ type: "PRACTICE_STARTED"; mode: PracticeMode }>
+  | Readonly<{ type: "VOICE_FAILED"; message: string }>
   | Readonly<{
-      type: "TRANSCRIPT_SYNCED";
-      transcript: readonly ConversationTurn[];
+      type: "VOICE_STATUS_CHANGED";
+      status: "idle" | "listening" | "speaking";
     }>
+  | Readonly<{ type: "TURN_ADDED"; turn: ConversationTurn }>
+  | Readonly<{ type: "TEXT_SENDING"; value: boolean }>
   | Readonly<{ type: "PRACTICE_ENDED" }>
   | Readonly<{ type: "ANALYSIS_SUCCEEDED"; analysis: CallAnalysis }>
-  | Readonly<{ type: "ANALYSIS_FAILED"; message: string }>
-  | Readonly<{ type: "REPLAY_SELECTED"; momentId: string }>
-  | Readonly<{ type: "BACK_TO_TWIN" }>
+  | Readonly<{
+      type: "REPLAY_SELECTED";
+      moment: CoachingMoment;
+      replayContext: ReplayContext;
+    }>
+  | Readonly<{ type: "ERROR_DISMISSED" }>
   | Readonly<{ type: "RESET" }>;
 
-const sourceLines = (value: string): readonly string[] =>
-  value
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean);
+export const activeTranscript = (state: AppState): readonly ConversationTurn[] =>
+  state.attempt === "replay" ? state.replayTranscript : state.originalTranscript;
 
-export const INITIAL_APP_STATE: AppState = Object.freeze({
-  phase: "source",
-  sourceText: "",
-  sourceLines: [],
-  twin: null,
-  transcript: [],
-  originalTranscript: [],
-  analysis: null,
-  replayFrom: null,
-  selectedMomentId: null,
-  practiceMode: "voice",
-  attempt: 1,
-  error: null,
-  canUseTextFallback: false,
-});
-
-export const reduceAppState = (
-  state: AppState,
-  event: AppEvent,
-): AppState => {
+export const reduceAppState = (state: AppState, event: AppEvent): AppState => {
   switch (event.type) {
     case "SOURCE_CHANGED":
-      return {
-        ...state,
-        sourceText: event.value,
-        sourceLines: sourceLines(event.value),
-        error: null,
-      };
+      return { ...state, sourceText: event.value };
     case "EXTRACTION_STARTED":
       return { ...state, phase: "extracting", error: null };
     case "EXTRACTION_SUCCEEDED":
       return { ...state, phase: "twin", twin: event.twin, error: null };
-    case "EXTRACTION_FAILED":
+    case "FAILED":
       return {
         ...state,
         phase: "error",
         error: event.message,
-        canUseTextFallback: false,
+        recoverPhase: event.recoverPhase,
       };
-    case "PRACTICE_STARTED":
+    case "PRACTICE_CONNECTING":
       return {
         ...state,
         phase: "connecting",
-        practiceMode: "voice",
-        error: null,
-        canUseTextFallback: false,
+        attempt: event.attempt,
+        mode: null,
+        voiceError: null,
+        voiceStatus: "idle",
       };
-    case "PRACTICE_CONNECTED":
+    case "PRACTICE_STARTED":
+      return { ...state, phase: "practice", mode: event.mode, voiceError: null };
+    case "VOICE_FAILED":
       return {
         ...state,
         phase: "practice",
-        practiceMode: event.mode,
-        error: null,
+        mode: null,
+        voiceError: event.message,
+        voiceStatus: "idle",
       };
-    case "PRACTICE_FAILED":
-      return {
-        ...state,
-        phase: "error",
-        error: event.message,
-        canUseTextFallback: true,
-      };
-    case "TEXT_FALLBACK_STARTED":
-      return {
-        ...state,
-        phase: "practice",
-        practiceMode: "text",
-        error: null,
-        canUseTextFallback: false,
-      };
+    case "VOICE_STATUS_CHANGED":
+      return { ...state, voiceStatus: event.status };
     case "TURN_ADDED":
-      return {
-        ...state,
-        transcript: [...state.transcript, event.turn],
-      };
-    case "TRANSCRIPT_SYNCED":
-      return {
-        ...state,
-        transcript: [...event.transcript],
-      };
+      return state.attempt === "replay"
+        ? { ...state, replayTranscript: [...state.replayTranscript, event.turn] }
+        : { ...state, originalTranscript: [...state.originalTranscript, event.turn] };
+    case "TEXT_SENDING":
+      return { ...state, isSendingText: event.value };
     case "PRACTICE_ENDED":
-      return { ...state, phase: "analyzing", error: null };
+      return { ...state, phase: "analyzing", isSendingText: false };
     case "ANALYSIS_SUCCEEDED":
+      return { ...state, phase: "review", analysis: event.analysis, error: null };
+    case "REPLAY_SELECTED":
       return {
         ...state,
         phase: "review",
-        analysis: event.analysis,
-        error: null,
+        attempt: "replay",
+        selectedMoment: event.moment,
+        replayContext: event.replayContext,
+        replayTranscript: [],
       };
-    case "ANALYSIS_FAILED":
-      return {
-        ...state,
-        phase: "error",
-        error: event.message,
-        canUseTextFallback: false,
-      };
-    case "REPLAY_SELECTED": {
-      const moment = state.analysis?.moments.find(
-        (candidate) => candidate.id === event.momentId,
-      );
-      if (!moment) return state;
-
-      return {
-        ...state,
-        phase: "connecting",
-        originalTranscript:
-          state.originalTranscript.length > 0
-            ? state.originalTranscript
-            : state.transcript,
-        transcript: [],
-        analysis: null,
-        replayFrom: buildReplayContext(state.transcript, moment),
-        selectedMomentId: event.momentId,
-        practiceMode: "voice",
-        attempt: 2,
-        error: null,
-        canUseTextFallback: false,
-      };
-    }
-    case "BACK_TO_TWIN":
-      return {
-        ...state,
-        phase: state.twin ? "twin" : "source",
-        error: null,
-        canUseTextFallback: false,
-      };
+    case "ERROR_DISMISSED":
+      return { ...state, phase: state.recoverPhase, error: null };
     case "RESET":
-      return INITIAL_APP_STATE;
+      return initialAppState;
     default: {
       const exhaustive: never = event;
       return exhaustive;
