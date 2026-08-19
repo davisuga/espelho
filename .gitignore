@@ -19,6 +19,11 @@
 
 # production
 /build
+/dist
+
+# Sites local build state
+/.vinext
+/.wrangler
 
 # misc
 .DS_Store
