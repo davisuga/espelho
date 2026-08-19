@@ -21,13 +21,11 @@ export const validateAnalysisReferences = (
     transcript.filter((turn) => turn.speaker === "seller").map((turn) => [turn.id, turn]),
   );
   const customerTurns = transcript.filter((turn) => turn.speaker === "customer");
-  const knownEvidence = new Map(
-    [
-      ...twin.facts.flatMap((fact) => fact.evidence.map((evidence) => [fact.id, evidence.quote] as const)),
-      ...twin.concerns.flatMap((concern) => concern.evidence.map((evidence) => [concern.topic, evidence.quote] as const)),
-      ...twin.goals.flatMap((goal) => goal.evidence.map((evidence) => [goal.topic, evidence.quote] as const)),
-    ],
-  );
+  const knownEvidence = [
+    ...twin.facts.flatMap((fact) => fact.evidence.map((evidence) => [fact.id, evidence.quote] as const)),
+    ...twin.concerns.flatMap((concern) => concern.evidence.map((evidence) => [concern.topic, evidence.quote] as const)),
+    ...twin.goals.flatMap((goal) => goal.evidence.map((evidence) => [goal.topic, evidence.quote] as const)),
+  ];
 
   const validateSellerReference = (
     kind: string,
@@ -65,8 +63,11 @@ export const validateAnalysisReferences = (
       errors.push(`Moment ${moment.id} contains a customer quote that does not exist.`);
     }
     for (const evidence of moment.customerEvidence) {
-      const quote = knownEvidence.get(evidence.claimId);
-      if (!quote || !containsQuote(quote, evidence.quote)) {
+      const hasMatchingEvidence = knownEvidence.some(
+        ([claimId, quote]) =>
+          claimId === evidence.claimId && containsQuote(quote, evidence.quote),
+      );
+      if (!hasMatchingEvidence) {
         errors.push(`Moment ${moment.id} contains unverifiable customer evidence.`);
       }
     }

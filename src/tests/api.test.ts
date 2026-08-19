@@ -94,6 +94,41 @@ describe("API handlers", () => {
     expect((await response.json()).moments).toHaveLength(1);
   });
 
+  it("accepts any valid evidence quote attached to the referenced customer claim", async () => {
+    const twinWithMultipleEvidence = {
+      ...twinFixture,
+      facts: twinFixture.facts.map((fact) =>
+        fact.id === "adoption"
+          ? {
+              ...fact,
+              evidence: [
+                ...fact.evidence,
+                {
+                  quote: "Meu medo é colocar mais uma ferramenta e dar mais trabalho para a equipe.",
+                  sourceIndex: 9,
+                  explanation: "A second direct quote supporting the same concern.",
+                },
+              ],
+            }
+          : fact,
+      ),
+    };
+    const handler = createAnalyzeHandler({
+      analyze: vi.fn().mockResolvedValue(analysisFixture),
+    });
+
+    const response = await handler(
+      jsonRequest("http://local/api/analyze", {
+        twin: twinWithMultipleEvidence,
+        transcript: [
+          { id: "seller-1", speaker: "seller", text: "Nossa plataforma tem automações, dashboard e integrações.", createdAt: 1 },
+        ],
+      }),
+    );
+
+    expect(response.status).toBe(200);
+  });
+
   it("rejects analysis that references a missing transcript turn", async () => {
     const handler = createAnalyzeHandler({
       analyze: vi.fn().mockResolvedValue({

@@ -6,7 +6,7 @@ import { twinFixture } from "./fixtures";
 describe("twin prompt", () => {
   it("forbids fabricating unknown budget and timeline", () => {
     const prompt = buildTwinInstructions(twinFixture);
-    expect(prompt).toContain("Não fabrique orçamento, prazo de decisão");
+    expect(prompt).toContain("Never fabricate budget, timing");
     expect(prompt).toContain("Orçamento disponível");
     expect(prompt).toContain("Prazo de decisão");
   });
@@ -18,8 +18,8 @@ describe("twin prompt", () => {
   });
 
   it("makes the analysis extract behavior without generating scores", () => {
-    expect(analysisInstructions).toContain("NÃO é atribuir notas");
-    expect(analysisInstructions).toContain("Não produza scores numéricos");
-    expect(analysisInstructions).toContain("Não infira personalidade");
+    expect(analysisInstructions).toContain("Do not assign scores");
+    expect(analysisInstructions).toContain("Do not infer personality");
+    expect(analysisInstructions).toContain("or produce numeric scores");
   });
 });

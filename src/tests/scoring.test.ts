@@ -72,11 +72,11 @@ describe("deterministic scoring", () => {
 
   it("maps score ranges to deterministic labels", () => {
     expect([39, 59, 74, 89, 100].map(scoreInterpretation)).toEqual([
-      "Precisa de bastante prática",
-      "Em desenvolvimento",
-      "Bom",
-      "Muito bom",
-      "Excelente",
+      "Needs significant practice",
+      "Developing",
+      "Good",
+      "Very good",
+      "Excellent",
     ]);
   });
 });

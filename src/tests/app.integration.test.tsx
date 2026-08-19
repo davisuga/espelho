@@ -23,27 +23,27 @@ describe("Espelho fallback happy path", () => {
     const user = userEvent.setup();
     render(<EspelhoApp />);
 
-    await user.click(screen.getByRole("button", { name: "Usar exemplo" }));
-    await user.click(screen.getByRole("button", { name: /Criar espelho/i }));
-    expect(await screen.findByRole("heading", { name: "Conheça Mariana" })).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Use Jordan example" }));
+    await user.click(screen.getByRole("button", { name: /Create twin/i }));
+    expect(await screen.findByRole("heading", { name: "Meet Mariana" })).toBeVisible();
 
-    await user.click(screen.getByRole("button", { name: /Ensaiar conversa/i }));
-    expect(await screen.findByText("Não conseguimos iniciar o áudio.")).toBeVisible();
-    await user.click(screen.getByRole("button", { name: /Continuar em modo texto/i }));
+    await user.click(screen.getByRole("button", { name: /Start rehearsal/i }));
+    expect(await screen.findByText("We could not start audio.")).toBeVisible();
+    await user.click(screen.getByRole("button", { name: /Continue in text mode/i }));
 
-    const input = screen.getByRole("textbox", { name: "Sua fala" });
+    const input = screen.getByRole("textbox", { name: "Your line" });
     await user.type(input, "Nossa plataforma tem automações, dashboard e integrações.");
-    await user.click(screen.getByRole("button", { name: "Enviar fala" }));
+    await user.click(screen.getByRole("button", { name: "Send line" }));
     expect(await screen.findByText(/como isso vai simplificar/i)).toBeVisible();
 
-    await user.click(screen.getByRole("button", { name: "Encerrar ensaio" }));
+    await user.click(screen.getByRole("button", { name: "End rehearsal" }));
     expect(await screen.findByText("67")).toBeVisible();
-    expect(screen.getByText("Seu desempenho, dimensão por dimensão")).toBeVisible();
-    expect(await screen.findByRole("heading", { name: /momento que vale refazer/i })).toBeVisible();
+    expect(screen.getByText("Your performance, dimension by dimension")).toBeVisible();
+    expect(await screen.findByRole("heading", { name: /moment worth retrying/i })).toBeVisible();
     expect(screen.getByText("Você perdeu Mariana aqui")).toBeVisible();
 
-    await user.click(screen.getByRole("button", { name: /Refazer deste momento/i }));
-    await waitFor(() => expect(screen.getByText("Segunda tentativa")).toBeVisible());
-    expect(await screen.findByText("Não conseguimos iniciar o áudio.")).toBeVisible();
+    await user.click(screen.getByRole("button", { name: /Retry from this moment/i }));
+    await waitFor(() => expect(screen.getByText("Second attempt")).toBeVisible());
+    expect(await screen.findByText("We could not start audio.")).toBeVisible();
   });
 });
